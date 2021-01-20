@@ -102,6 +102,9 @@ export function onMouseUpEventListener(e) {
   this.isMouseDown = false;
   this.selectionAreaElement.style.display = "none";
   if (this.selectionAreaViewPort) {
+    this.viewportHistory.push({
+      viewport: { ...this.activeNode, ...this.selectionAreaViewPort },
+    });
     this.transitionTo(this.selectionAreaViewPort, { transitionDirection: 1 });
     this.selectionAreaViewPort = null;
   }

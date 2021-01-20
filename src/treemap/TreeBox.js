@@ -25,6 +25,7 @@ export default class TreeBox {
   canvas2dContext;
 
   viewport = { x0: 0, x1: 0, y0: 0, y1: 0 };
+  viewportHistory = [];
 
   // root node of user input
   rootNode;
