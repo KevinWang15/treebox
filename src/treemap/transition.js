@@ -8,6 +8,7 @@ export function transitionTo(target, { transitionDirection = 1 }) {
   return new Promise((resolve) => {
     const transitionStart = +new Date();
     const transitionLength = 300;
+    const pristineViewport = this.viewport;
 
     let onAnimationFrame = () => {
       let progress = (+new Date() - transitionStart) / transitionLength;
@@ -16,7 +17,7 @@ export function transitionTo(target, { transitionDirection = 1 }) {
       }
       Object.assign(
         this.viewport,
-        calcTransitioningViewport(this.viewport, target, progress)
+        calcTransitioningViewport(pristineViewport, target, progress)
       );
       this.canvasUtils.clearAll();
       this.paintLayer(this.activeNode.children, {
