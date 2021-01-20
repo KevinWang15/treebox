@@ -1,6 +1,6 @@
 {
   "name": "@kevinwang15/treebox",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "./build/treebox.js",
   "dependencies": {
     "react": "^17.0.1",
