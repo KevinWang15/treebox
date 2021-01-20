@@ -164,6 +164,7 @@ export default class TreeBox {
       borderRadius: "5px",
       boxSizing: "border-box",
       background: "rgba(46, 115, 252, 0.11)",
+      backdropFilter: "sepia(70%)",
       position: "fixed",
     });
     document.body.appendChild(element);
