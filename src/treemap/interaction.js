@@ -103,7 +103,8 @@ export function onMouseUpEventListener(e) {
   this.selectionAreaElement.style.display = "none";
   if (this.selectionAreaViewPort) {
     this.viewportHistory.push({
-      viewport: { ...this.activeNode, ...this.selectionAreaViewPort },
+      node: this.activeNode,
+      viewport: this.selectionAreaViewPort,
     });
     this.transitionTo(this.selectionAreaViewPort, {
       transitionDirection: 1,

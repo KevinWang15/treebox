@@ -1,6 +1,6 @@
 import { calcTransitioningViewport } from "./viewport";
 
-export function transitionTo(target, { transitionDirection = 1 }) {
+export function transitionTo(viewport, { transitionDirection = 1 }) {
   if (this.viewportTransitionInProgress) {
     return Promise.reject("viewportTransition in progress");
   }
@@ -17,7 +17,7 @@ export function transitionTo(target, { transitionDirection = 1 }) {
       }
       Object.assign(
         this.viewport,
-        calcTransitioningViewport(pristineViewport, target, progress)
+        calcTransitioningViewport(pristineViewport, viewport, progress)
       );
       this.canvasUtils.clearAll();
       this.paintLayer(this.activeNode.children, {
@@ -42,9 +42,11 @@ export function transitionTo(target, { transitionDirection = 1 }) {
 export function zoomIn(targetNode) {
   targetNode.parent = this.activeNode;
   this.transitionTargetNode = targetNode;
-  this.viewportHistory.push({
+  let nodeAndViewport = {
+    node: targetNode,
     viewport: targetNode,
-  });
+  };
+  this.viewportHistory.push(nodeAndViewport);
 
   this.transitionTo(targetNode, {}).then(() => {
     this.activeNode = targetNode;
@@ -61,21 +63,23 @@ export function zoomOut() {
     return;
   }
   this.viewportHistory.pop();
-  let lastViewport = this.viewportHistory[this.viewportHistory.length - 1];
-  if (!lastViewport) {
-    lastViewport = { viewport: this.rootNode };
+  let lastNodeAndViewport = this.viewportHistory[
+    this.viewportHistory.length - 1
+  ];
+  if (!lastNodeAndViewport) {
+    lastNodeAndViewport = { node: this.rootNode, viewport: this.rootNode };
   }
-  this.activeNode = lastViewport.viewport;
+  this.activeNode = lastNodeAndViewport.node;
 
   this.transitionTargetNode = this.activeNode;
-  this.transitionTo(lastViewport.viewport, { transitionDirection: -1 }).then(
-    () => {
-      this.transitionTargetNode = null;
-      this.lastHoveringItem = null;
-      this.repaint();
-      setTimeout(() => {
-        this.onMouseMove({ x: this.lastMousePos.x, y: this.lastMousePos.y });
-      });
-    }
-  );
+  this.transitionTo(lastNodeAndViewport.viewport, {
+    transitionDirection: -1,
+  }).then(() => {
+    this.transitionTargetNode = null;
+    this.lastHoveringItem = null;
+    this.repaint();
+    setTimeout(() => {
+      this.onMouseMove({ x: this.lastMousePos.x, y: this.lastMousePos.y });
+    });
+  });
 }
