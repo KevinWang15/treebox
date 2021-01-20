@@ -61,7 +61,7 @@ export default class TreeBox {
             if (!this.eSelected.children) {
                 return;
             }
-            if (this.lastHoveringItem) {
+            if (this.lastHoveringItem && (!this.lastHoveringItem.parent || this.lastHoveringItem.parent.children.length > 1)) {
                 this.lastHoveringItem.parent = this.eSelected;
                 this.ePendingSelected = this.lastHoveringItem;
                 this.animateViewPort(this.lastHoveringItem, {}).then(() => {
@@ -75,7 +75,6 @@ export default class TreeBox {
                         );
                     });
                 });
-
             }
         });
     }
@@ -159,7 +158,7 @@ export default class TreeBox {
         const group2 = [];
         let currentWright = 0;
         const array = data.sort((x, y) => {
-            return x.weight - y.weight;
+            return y.weight - x.weight;
         });
         for (let item of array) {
             if (currentWright < targetWeightForGroup1) {
@@ -379,12 +378,16 @@ export default class TreeBox {
             }
         }
         for (let item of data) {
-            item.fontSize = Math.round((500 * this.pixelRatio / (1 + depth)) * item.weight / totalWeight);
+            item.fontSize = Math.round((200 * this.pixelRatio / (1 + depth)) * Math.sqrt(item.weight / totalWeight));
         }
     }
 
     repaint() {
-        this.updateLayerFontSize(this.eSelected.children, {depth: 0});
+        if (!this.eSelected.children) {
+            this.updateLayerFontSize([this.eSelected], {depth: 0});
+        } else {
+            this.updateLayerFontSize(this.eSelected.children, {depth: 0});
+        }
         this.clearRectAndPaintLayer(this.eSelected, {hovering: false, depth: -1});
     }
 
