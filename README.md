@@ -1,6 +1,6 @@
 # treebox
 
-![](./design/logo.png)
+![](https://raw.githubusercontent.com/KevinWang15/treebox/master/design/logo.png)
 
 Treebox is an interactive TreeMap visualization
 * weight-aware multi-level hierarchical treemap layout
@@ -13,9 +13,9 @@ Treebox is an interactive TreeMap visualization
 * MIT license
 
 # DEMO
-![](./demo.png)
+![](https://raw.githubusercontent.com/KevinWang15/treebox/master/demo.png)
 
-![](./demo.gif)
+![](https://raw.githubusercontent.com/KevinWang15/treebox/master/demo.gif)
 
 # try it
 ```bash
