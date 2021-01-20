@@ -81,3 +81,8 @@ const pixelRatio = 2;
         })
     }}/>
 ```
+
+# Roadmap
+* support pan & zoom
+* better font animation that will not kill performance
+* more customization options
