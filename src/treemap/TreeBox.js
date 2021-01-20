@@ -1,6 +1,11 @@
 import { reverseViewportTransform, viewportTransform } from "./viewport";
 import { clearAll, clearRect, fillRect, fillText } from "./canvas";
-import { onClickEventListener, onMouseMove } from "./interaction";
+import {
+  onClickEventListener,
+  onMouseDownEventListener,
+  onMouseMove,
+  onMouseUpEventListener,
+} from "./interaction";
 import { layoutLayer } from "./layout";
 import { transitionTo, zoomIn, zoomOut } from "./transition";
 import {
@@ -16,6 +21,7 @@ export default class TreeBox {
 
   domElement;
   canvasElement;
+  selectionAreaElement;
   canvas2dContext;
 
   viewport = { x0: 0, x1: 0, y0: 0, y1: 0 };
@@ -39,6 +45,8 @@ export default class TreeBox {
   // interactions
   onMouseMove = onMouseMove.bind(this);
   onClickEventListener = onClickEventListener.bind(this);
+  onMouseDownEventListener = onMouseDownEventListener.bind(this);
+  onMouseUpEventListener = onMouseUpEventListener.bind(this);
 
   // transitions
   transitionTo = transitionTo.bind(this);
@@ -62,11 +70,15 @@ export default class TreeBox {
   // pixels between boxes
   BOX_MARGIN = 1;
 
+  // how many pixels moved before drawing a selection area
+  SELECTION_AREA_TRIGGER_THRESHOLD = 20;
+
   constructor({ data, domElement, eventHandler, pixelRatio = 1 }) {
     this.pixelRatio = pixelRatio;
     this.eventHandler = eventHandler;
     this.domElement = domElement;
     this.canvasElement = this.createCanvasElement(domElement);
+    this.selectionAreaElement = this.createSelectionAreaElement();
 
     this.canvasElement.style.zoom = 1 / this.pixelRatio;
     this.rootNode = {
@@ -98,10 +110,13 @@ export default class TreeBox {
   destroy() {
     this.removeEventListeners();
     this.canvasUtils.clearAll();
+    this.selectionAreaElement.parentElement.removeChild(
+      this.selectionAreaElement
+    );
   }
 
   onMouseMoveEventListener = (e) => {
-    this.onMouseMove(e.offsetX, e.offsetY);
+    this.onMouseMove(e, e.offsetX, e.offsetY);
     this.lastMousePos = { x: e.offsetX, y: e.offsetY };
   };
 
@@ -110,6 +125,11 @@ export default class TreeBox {
       "mousemove",
       this.onMouseMoveEventListener
     );
+    this.canvasElement.addEventListener(
+      "mousedown",
+      this.onMouseDownEventListener
+    );
+    this.canvasElement.addEventListener("mouseup", this.onMouseUpEventListener);
     this.canvasElement.addEventListener("click", this.onClickEventListener);
   }
 
@@ -117,6 +137,14 @@ export default class TreeBox {
     this.canvasElement.removeEventListener(
       "mousemove",
       this.onMouseMoveEventListener
+    );
+    this.canvasElement.removeEventListener(
+      "mousedown",
+      this.onMouseDownEventListener
+    );
+    this.canvasElement.removeEventListener(
+      "mouseup",
+      this.onMouseUpEventListener
     );
     this.canvasElement.removeEventListener("click", this.onClickEventListener);
   }
@@ -130,11 +158,24 @@ export default class TreeBox {
   }
 
   createCanvasElement(domElement) {
-    const rect = domElement.getBoundingClientRect();
+    this.domElementRect = domElement.getBoundingClientRect();
     const canvas = document.createElement("CANVAS");
-    canvas.width = rect.width * this.pixelRatio;
-    canvas.height = rect.height * this.pixelRatio;
+    canvas.width = this.domElementRect.width * this.pixelRatio;
+    canvas.height = this.domElementRect.height * this.pixelRatio;
     domElement.appendChild(canvas);
     return canvas;
+  }
+
+  createSelectionAreaElement() {
+    const element = document.createElement("div");
+    Object.assign(element.style, {
+      pointerEvents: "none",
+      border: "1px solid rgba(98, 155, 255, 0.81)",
+      borderRadius: "5px",
+      background: "rgba(46, 115, 252, 0.11)",
+      position: "fixed",
+    });
+    document.body.appendChild(element);
+    return element;
   }
 }

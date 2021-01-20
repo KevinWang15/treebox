@@ -4,6 +4,7 @@ export function transitionTo(target, { transitionDirection = 1 }) {
   if (this.viewportTransitionInProgress) {
     return Promise.reject("viewportTransition in progress");
   }
+  this.inSelectionViewport = !target.weight; // if it is a real node instead of a viewport..
   this.viewportTransitionInProgress = true;
   return new Promise((resolve) => {
     const transitionStart = +new Date();
@@ -47,7 +48,7 @@ export function zoomIn(targetNode) {
     this.transitionTargetNode = null;
     this.repaint();
     setTimeout(() => {
-      this.onMouseMove(this.lastMousePos.x, this.lastMousePos.y);
+      this.onMouseMove(null, this.lastMousePos.x, this.lastMousePos.y);
     });
   });
 }
@@ -56,17 +57,21 @@ export function zoomOut() {
   if (this.viewportTransitionInProgress) {
     return;
   }
-  if (!this.activeNode.parent) {
-    return;
+  if (this.inSelectionViewport) {
+    this.inSelectionViewport = false;
+  } else {
+    if (!this.activeNode.parent) {
+      return;
+    }
+    this.activeNode = this.activeNode.parent;
   }
-  this.activeNode = this.activeNode.parent;
   this.transitionTargetNode = this.activeNode;
   this.transitionTo(this.activeNode, { transitionDirection: -1 }).then(() => {
     this.transitionTargetNode = null;
     this.lastHoveringItem = null;
     this.repaint();
     setTimeout(() => {
-      this.onMouseMove(this.lastMousePos.x, this.lastMousePos.y);
+      this.onMouseMove(null, this.lastMousePos.x, this.lastMousePos.y);
     });
   });
 }

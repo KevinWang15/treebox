@@ -93,9 +93,9 @@ export function paintLayer(
 }
 
 export function repaint() {
-  const rect = this.domElement.getBoundingClientRect();
-  this.canvasElement.width = rect.width * this.pixelRatio;
-  this.canvasElement.height = rect.height * this.pixelRatio;
+  this.domElementRect = this.domElement.getBoundingClientRect();
+  this.canvasElement.width = this.domElementRect.width * this.pixelRatio;
+  this.canvasElement.height = this.domElementRect.height * this.pixelRatio;
 
   if (!this.activeNode.children) {
     this.updateLayerFontSize([this.activeNode], { depth: 0 });
