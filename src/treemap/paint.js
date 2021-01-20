@@ -118,6 +118,15 @@ export function updateLayerFontSize(data, { depth = 0 } = { depth: 0 }) {
   if (!data) {
     return;
   }
+
+  const nodeWeight =
+    (this.activeNode.x1 - this.activeNode.x0) *
+    (this.activeNode.y1 - this.activeNode.y0);
+  const viewportSize =
+    (this.viewport.x1 - this.viewport.x0) *
+    (this.viewport.y1 - this.viewport.y0);
+  const factor = Math.sqrt(nodeWeight / viewportSize);
+
   let totalWeight = 0;
   for (let item of data) {
     totalWeight += item.weight;
@@ -126,9 +135,11 @@ export function updateLayerFontSize(data, { depth = 0 } = { depth: 0 }) {
     }
   }
   for (let item of data) {
-    item.fontSize = Math.round(
-      ((200 * this.pixelRatio) / (1 + depth)) *
-        Math.sqrt(item.weight / totalWeight)
-    );
+    item.fontSize =
+      factor *
+      Math.round(
+        ((200 * this.pixelRatio) / (1 + depth)) *
+          Math.sqrt(item.weight / totalWeight)
+      );
   }
 }

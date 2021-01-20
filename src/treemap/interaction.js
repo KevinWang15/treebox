@@ -105,7 +105,11 @@ export function onMouseUpEventListener(e) {
     this.viewportHistory.push({
       viewport: { ...this.activeNode, ...this.selectionAreaViewPort },
     });
-    this.transitionTo(this.selectionAreaViewPort, { transitionDirection: 1 });
+    this.transitionTo(this.selectionAreaViewPort, {
+      transitionDirection: 1,
+    }).then(() => {
+      this.repaint();
+    });
     this.selectionAreaViewPort = null;
   }
 }
