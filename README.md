@@ -5,7 +5,7 @@
 Treebox is an interactive TreeMap visualization
 * weight-aware multi-level hierarchical treemap layout
 * click on a block to zoom in / "esc" to zoom out
-* smooth animation
+* smooth transition
 * uses canvas & requestAnimationFrame for performance
 * customize text / color / weight
 * fires events (so you can implement tooltip, etc.)
@@ -38,7 +38,7 @@ export function genData(layers = 4) {
         const children = layers - 1 > 0 ? genData(layers - 1) : null;
         result.push({
             text: `${layers}-${i}`,
-            color: ({ctx, hovering, animationProgress, item, bounds}) => 'red',
+            color: ({ctx, hovering, transitionProgress, item, bounds}) => 'red',
             children,
             weight: children ? null : Math.floor(10 * (1 + 2 * Math.random()))
         });
@@ -64,7 +64,7 @@ const pixelRatio = 2;
             {
                 pixelRatio,
                 data: genData(),
-                element: canvasRef,
+                domElement: canvasRef,
                 eventHandler: console.log,
             }
         );

@@ -1,3 +1,3 @@
-import TreeBox from "./treemap/TreeBox"
+import TreeBox from "./treemap/TreeBox";
 
 export default TreeBox;
