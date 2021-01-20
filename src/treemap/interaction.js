@@ -102,6 +102,16 @@ export function onMouseUpEventListener(e) {
   this.isMouseDown = false;
   this.selectionAreaElement.style.display = "none";
   if (this.selectionAreaViewPort) {
+    if (
+      Math.abs(this.selectionAreaViewPort.x1 - this.selectionAreaViewPort.x0) *
+        Math.abs(
+          this.selectionAreaViewPort.y1 - this.selectionAreaViewPort.y0
+        ) <
+      400
+    ) {
+      this.selectionAreaViewPort = null;
+      return;
+    }
     this.viewportHistory.push({
       node: this.activeNode,
       viewport: this.selectionAreaViewPort,
