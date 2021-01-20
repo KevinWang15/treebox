@@ -23,10 +23,10 @@ export function viewportTransform({ x0, y0, x1, y1 }) {
   const vpw = this.viewport.x1 - this.viewport.x0;
   const vph = this.viewport.y1 - this.viewport.y0;
   return {
-    x0: ((x0 - this.viewport.x0) / vpw) * this.domElement.clientWidth,
-    x1: ((x1 - this.viewport.x0) / vpw) * this.domElement.clientWidth,
-    y0: ((y0 - this.viewport.y0) / vph) * this.domElement.clientHeight,
-    y1: ((y1 - this.viewport.y0) / vph) * this.domElement.clientHeight,
+    x0: ((x0 - this.viewport.x0) / vpw) * this.canvasElement.clientWidth,
+    x1: ((x1 - this.viewport.x0) / vpw) * this.canvasElement.clientWidth,
+    y0: ((y0 - this.viewport.y0) / vph) * this.canvasElement.clientHeight,
+    y1: ((y1 - this.viewport.y0) / vph) * this.canvasElement.clientHeight,
   };
 }
 
@@ -34,9 +34,9 @@ export function reverseViewportTransform({ x0, y0, x1, y1 }) {
   const vpw = this.viewport.x1 - this.viewport.x0;
   const vph = this.viewport.y1 - this.viewport.y0;
   return {
-    x0: (x0 * vpw) / this.domElement.clientWidth + this.viewport.x0,
-    x1: (x1 * vpw) / this.domElement.clientWidth + this.viewport.x1,
-    y0: (y0 * vph) / this.domElement.clientHeight + this.viewport.y0,
-    y1: (y1 * vph) / this.domElement.clientHeight + this.viewport.y1,
+    x0: (x0 * vpw) / this.canvasElement.clientWidth + this.viewport.x0,
+    x1: (x1 * vpw) / this.canvasElement.clientWidth + this.viewport.x1,
+    y0: (y0 * vph) / this.canvasElement.clientHeight + this.viewport.y0,
+    y1: (y1 * vph) / this.canvasElement.clientHeight + this.viewport.y1,
   };
 }

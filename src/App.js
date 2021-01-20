@@ -10,34 +10,47 @@ class App extends React.Component {
     const pixelRatio = 2;
 
     return (
-      <canvas
-        width={window.innerWidth * pixelRatio}
-        height={window.innerHeight * pixelRatio}
-        ref={(canvasRef) => {
-          if (!canvasRef) {
-            return;
-          }
-          const treebox = new TreeBox({
-            pixelRatio,
-            data: genData(),
-            domElement: canvasRef,
-            eventHandler: console.log,
-          });
-
-          window.treebox = treebox;
-
-          window.addEventListener("resize", () => {
-            canvasRef.width = window.innerWidth * pixelRatio;
-            canvasRef.height = window.innerHeight * pixelRatio;
-            treebox.repaint();
-          });
-          document.addEventListener("keydown", (e) => {
-            if (e.key === "Escape") {
-              treebox.zoomOut();
-            }
-          });
+      <div
+        style={{
+          width: "100%",
+          height: 800,
+          position: "absolute",
+          boxSizing: "border-box",
+          top: "50%",
+          transform: "translateY(-50%)",
+          padding: 50,
+          background: "#CCC",
         }}
-      />
+      >
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+          }}
+          ref={(domElement) => {
+            if (!domElement) {
+              return;
+            }
+            const treebox = new TreeBox({
+              pixelRatio,
+              data: genData(),
+              domElement,
+              eventHandler: console.log,
+            });
+
+            window.treebox = treebox;
+
+            window.addEventListener("resize", () => {
+              treebox.repaint();
+            });
+            document.addEventListener("keydown", (e) => {
+              if (e.key === "Escape") {
+                treebox.zoomOut();
+              }
+            });
+          }}
+        />
+      </div>
     );
   }
 }

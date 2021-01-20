@@ -15,6 +15,7 @@ export default class TreeBox {
   pixelRatio = 1;
 
   domElement;
+  canvasElement;
   canvas2dContext;
 
   viewport = { x0: 0, x1: 0, y0: 0, y1: 0 };
@@ -62,10 +63,12 @@ export default class TreeBox {
   BOX_MARGIN = 1;
 
   constructor({ data, domElement, eventHandler, pixelRatio = 1 }) {
+    this.pixelRatio = pixelRatio;
     this.eventHandler = eventHandler;
     this.domElement = domElement;
-    this.pixelRatio = pixelRatio;
-    this.domElement.style.zoom = 1 / this.pixelRatio;
+    this.canvasElement = this.createCanvasElement(domElement);
+
+    this.canvasElement.style.zoom = 1 / this.pixelRatio;
     this.rootNode = {
       children: data,
       x0: 0,
@@ -74,7 +77,7 @@ export default class TreeBox {
       y1: this.domElement.clientHeight,
     };
     this.activeNode = this.rootNode;
-    this.canvas2dContext = this.domElement.getContext("2d");
+    this.canvas2dContext = this.canvasElement.getContext("2d");
 
     Object.assign(this.viewport, {
       x0: 0,
@@ -98,24 +101,24 @@ export default class TreeBox {
   }
 
   onMouseMoveEventListener = (e) => {
-    this.onMouseMove(e.layerX, e.layerY);
-    this.lastMousePos = { x: e.layerX, y: e.layerY };
+    this.onMouseMove(e.offsetX, e.offsetY);
+    this.lastMousePos = { x: e.offsetX, y: e.offsetY };
   };
 
   addEventListeners() {
-    this.domElement.addEventListener(
+    this.canvasElement.addEventListener(
       "mousemove",
       this.onMouseMoveEventListener
     );
-    this.domElement.addEventListener("click", this.onClickEventListener);
+    this.canvasElement.addEventListener("click", this.onClickEventListener);
   }
 
   removeEventListeners() {
-    this.domElement.removeEventListener(
+    this.canvasElement.removeEventListener(
       "mousemove",
       this.onMouseMoveEventListener
     );
-    this.domElement.removeEventListener("click", this.onClickEventListener);
+    this.canvasElement.removeEventListener("click", this.onClickEventListener);
   }
 
   emitEvent(type, args) {
@@ -124,5 +127,14 @@ export default class TreeBox {
     }
 
     this.eventHandler(type, args);
+  }
+
+  createCanvasElement(domElement) {
+    const rect = domElement.getBoundingClientRect();
+    const canvas = document.createElement("CANVAS");
+    canvas.width = rect.width * this.pixelRatio;
+    canvas.height = rect.height * this.pixelRatio;
+    domElement.appendChild(canvas);
+    return canvas;
   }
 }
