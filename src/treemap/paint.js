@@ -34,7 +34,6 @@ export function paintLayer(
         item.x1 - item.x0,
         item.y1 - item.y0,
         {
-          margin: 1,
           color: item.color({
             hovering,
             ctx: this.canvas2dContext,
@@ -62,7 +61,6 @@ export function paintLayer(
           item.x1 - item.x0,
           item.y1 - item.y0,
           {
-            margin: 1,
             color: item.color({
               hovering,
               ctx: this.canvas2dContext,

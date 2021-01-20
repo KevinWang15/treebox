@@ -58,6 +58,9 @@ export default class TreeBox {
     reverseTransform: reverseViewportTransform.bind(this),
   };
 
+  // pixels between boxes
+  BOX_MARGIN = 1;
+
   constructor({ data, domElement, eventHandler, pixelRatio = 1 }) {
     this.eventHandler = eventHandler;
     this.domElement = domElement;
