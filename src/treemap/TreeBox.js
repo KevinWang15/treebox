@@ -45,38 +45,52 @@ export default class TreeBox {
     }
 
 
-    addEventListeners() {
-        this.element.addEventListener("mousemove", e => {
-            this.onMouseMove(e.layerX, e.layerY);
-            this.lastMousePos = {x: e.layerX, y: e.layerY}
-        })
+    onMouseMoveEventListener = e => {
+        this.onMouseMove(e.layerX, e.layerY);
+        this.lastMousePos = {x: e.layerX, y: e.layerY}
+    };
 
-        this.element.addEventListener("click", e => {
-            if (this.animating) {
-                return;
-            }
-            if (this.ePendingSelected) {
-                return;
-            }
-            if (!this.eSelected.children) {
-                return;
-            }
-            if (this.lastHoveringItem && (!this.lastHoveringItem.parent || this.lastHoveringItem.parent.children.length > 1)) {
-                this.lastHoveringItem.parent = this.eSelected;
-                this.ePendingSelected = this.lastHoveringItem;
-                this.animateViewPort(this.lastHoveringItem, {}).then(() => {
-                    this.eSelected = this.lastHoveringItem;
-                    this.ePendingSelected = null;
-                    this.lastHoveringItem = null;
-                    this.repaint();
-                    setTimeout(() => {
-                        this.onMouseMove(
-                            this.lastMousePos.x, this.lastMousePos.y
-                        );
-                    });
+    onClickEventListener = e => {
+        if (this.animating) {
+            return;
+        }
+        if (this.ePendingSelected) {
+            return;
+        }
+        if (!this.eSelected.children) {
+            return;
+        }
+        if (this.lastHoveringItem && (!this.lastHoveringItem.parent || this.lastHoveringItem.parent.children.length > 1)) {
+            this.lastHoveringItem.parent = this.eSelected;
+            this.ePendingSelected = this.lastHoveringItem;
+            this.animateViewPort(this.lastHoveringItem, {}).then(() => {
+                this.eSelected = this.lastHoveringItem;
+                this.ePendingSelected = null;
+                this.lastHoveringItem = null;
+                this.repaint();
+                setTimeout(() => {
+                    this.onMouseMove(
+                        this.lastMousePos.x, this.lastMousePos.y
+                    );
                 });
-            }
-        });
+            });
+        }
+    }
+
+    addEventListeners() {
+        this.element.addEventListener("mousemove", this.onMouseMoveEventListener)
+        this.element.addEventListener("click", this.onClickEventListener);
+    }
+
+    removeEventListeners() {
+        this.element.removeEventListener("mousemove", this.onMouseMoveEventListener)
+        this.element.removeEventListener("click", this.onClickEventListener);
+    }
+
+    destroy() {
+        this.removeEventListeners();
+        this.clearRect(0, 0, this.element.clientWidth, this.element.clientHeight);
+
     }
 
     onMouseMove(layerx, layery) {
@@ -93,7 +107,6 @@ export default class TreeBox {
                     }
                     this.lastHoveringItem = e;
                     this.clearRectAndPaintLayer(e, {hovering: true, depth: 0});
-                    this.element.style.cursor = "pointer";
                     this.emitEvent("hover", e);
                     break;
                 }

@@ -30,6 +30,8 @@ class App extends React.Component {
                         }
                     );
 
+                    window.treebox = treebox;
+
                     window.addEventListener("resize", () => {
                         canvasRef.width = window.innerWidth * pixelRatio;
                         canvasRef.height = window.innerHeight * pixelRatio;
