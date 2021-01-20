@@ -48,7 +48,7 @@ export function zoomIn(targetNode) {
     this.transitionTargetNode = null;
     this.repaint();
     setTimeout(() => {
-      this.onMouseMove(null, this.lastMousePos.x, this.lastMousePos.y);
+      this.onMouseMove({ x: this.lastMousePos.x, y: this.lastMousePos.y });
     });
   });
 }
@@ -71,7 +71,7 @@ export function zoomOut() {
     this.lastHoveringItem = null;
     this.repaint();
     setTimeout(() => {
-      this.onMouseMove(null, this.lastMousePos.x, this.lastMousePos.y);
+      this.onMouseMove({ x: this.lastMousePos.x, y: this.lastMousePos.y });
     });
   });
 }

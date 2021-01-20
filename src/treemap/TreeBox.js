@@ -116,36 +116,26 @@ export default class TreeBox {
   }
 
   onMouseMoveEventListener = (e) => {
-    this.onMouseMove(e, e.offsetX, e.offsetY);
-    this.lastMousePos = { x: e.offsetX, y: e.offsetY };
+    let x = e.pageX - this.domElementRect.left;
+    let y = e.pageY - this.domElementRect.top;
+    this.onMouseMove({ x, y });
+    this.lastMousePos = {
+      x,
+      y,
+    };
   };
 
   addEventListeners() {
-    this.canvasElement.addEventListener(
-      "mousemove",
-      this.onMouseMoveEventListener
-    );
-    this.canvasElement.addEventListener(
-      "mousedown",
-      this.onMouseDownEventListener
-    );
-    this.canvasElement.addEventListener("mouseup", this.onMouseUpEventListener);
+    document.addEventListener("mousemove", this.onMouseMoveEventListener);
+    document.addEventListener("mousedown", this.onMouseDownEventListener);
+    document.addEventListener("mouseup", this.onMouseUpEventListener);
     this.canvasElement.addEventListener("click", this.onClickEventListener);
   }
 
   removeEventListeners() {
-    this.canvasElement.removeEventListener(
-      "mousemove",
-      this.onMouseMoveEventListener
-    );
-    this.canvasElement.removeEventListener(
-      "mousedown",
-      this.onMouseDownEventListener
-    );
-    this.canvasElement.removeEventListener(
-      "mouseup",
-      this.onMouseUpEventListener
-    );
+    document.removeEventListener("mousemove", this.onMouseMoveEventListener);
+    document.removeEventListener("mousedown", this.onMouseDownEventListener);
+    document.removeEventListener("mouseup", this.onMouseUpEventListener);
     this.canvasElement.removeEventListener("click", this.onClickEventListener);
   }
 
@@ -172,6 +162,7 @@ export default class TreeBox {
       pointerEvents: "none",
       border: "1px solid rgba(98, 155, 255, 0.81)",
       borderRadius: "5px",
+      boxSizing: "border-box",
       background: "rgba(46, 115, 252, 0.11)",
       position: "fixed",
     });

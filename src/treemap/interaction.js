@@ -1,16 +1,27 @@
 import { normalizeViewport } from "./viewport";
 
-export function onMouseMove(e, offsetX, offsetY) {
+function limitTo(value, min, max) {
+  if (value < min) {
+    return min;
+  }
+  if (value > max) {
+    return max;
+  }
+  return value;
+}
+
+export function onMouseMove({ x, y }) {
   const transformed = this.viewportUtils.reverseTransform({
-    x0: offsetX,
-    y0: offsetY,
-    x1: offsetX,
-    y1: offsetY,
+    x0: x,
+    y0: y,
+    x1: x,
+    y1: y,
   });
-  const x = transformed.x0;
-  const y = transformed.y0;
+
+  const tx = transformed.x0;
+  const ty = transformed.y0;
   for (const e of this.activeNode.children || []) {
-    if (e.x0 < x && e.x1 > x && e.y0 < y && e.y1 > y) {
+    if (e.x0 < tx && e.x1 > tx && e.y0 < ty && e.y1 > ty) {
       if (!(this.lastHoveringItem && this.lastHoveringItem === e)) {
         if (this.lastHoveringItem) {
           this.clearRectAndPaintLayer(this.lastHoveringItem, {
@@ -27,15 +38,14 @@ export function onMouseMove(e, offsetX, offsetY) {
   }
 
   if (
-    e &&
     this.isMouseDown &&
     this.lastMouseDownPos &&
-    selectionAreaTriggered.call(this, e)
+    selectionAreaTriggered.call(this, { x: x, y: y })
   ) {
-    let x0 = e.offsetX;
-    let x1 = this.lastMouseDownPos.offsetX;
-    let y0 = e.offsetY;
-    let y1 = this.lastMouseDownPos.offsetY;
+    let x0 = limitTo(x, 0, this.domElementRect.width);
+    let x1 = limitTo(this.lastMouseDownPos.x, 0, this.domElementRect.width);
+    let y0 = limitTo(y, 0, this.domElementRect.height);
+    let y1 = limitTo(this.lastMouseDownPos.y, 0, this.domElementRect.height);
     this.selectionAreaElement.style.display = "block";
     this.selectionAreaElement.style.top =
       Math.min(y0, y1) + this.domElementRect.top + "px";
@@ -46,17 +56,20 @@ export function onMouseMove(e, offsetX, offsetY) {
 
     this.selectionAreaViewPort = this.viewportUtils.reverseTransform(
       normalizeViewport({
-        x0: this.lastMouseDownPos.offsetX,
-        y0: this.lastMouseDownPos.offsetY,
-        x1: offsetX,
-        y1: offsetY,
+        x0,
+        y0,
+        x1,
+        y1,
       })
     );
   }
 }
 
 export function onClickEventListener(e) {
-  if (this.lastMouseDownPos && selectionAreaTriggered.call(this, e)) {
+  let x = e.pageX - this.domElementRect.left;
+  let y = e.pageY - this.domElementRect.top;
+
+  if (this.lastMouseDownPos && selectionAreaTriggered.call(this, { x, y })) {
     return;
   }
   if (this.viewportTransitionInProgress) {
@@ -80,8 +93,8 @@ export function onClickEventListener(e) {
 export function onMouseDownEventListener(e) {
   this.isMouseDown = true;
   this.lastMouseDownPos = {
-    offsetX: e.offsetX,
-    offsetY: e.offsetY,
+    x: e.pageX - this.domElementRect.left,
+    y: e.pageY - this.domElementRect.top,
   };
 }
 
@@ -94,10 +107,10 @@ export function onMouseUpEventListener(e) {
   }
 }
 
-export function selectionAreaTriggered(e) {
+export function selectionAreaTriggered({ x, y }) {
   return (
-    Math.abs(e.offsetX - this.lastMouseDownPos.offsetX) +
-      Math.abs(e.offsetY - this.lastMouseDownPos.offsetY) >
+    Math.abs(x - this.lastMouseDownPos.x) +
+      Math.abs(y - this.lastMouseDownPos.y) >
     this.SELECTION_AREA_TRIGGER_THRESHOLD
   );
 }
