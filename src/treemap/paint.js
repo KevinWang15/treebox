@@ -28,20 +28,29 @@ export function paintLayer(
     // let fontSize = 100;
     let fontSize = item.fontSize;
     const paintNormal = () => {
-      this.canvasUtils.fillRect(
-        item.x0,
-        item.y0,
-        item.x1 - item.x0,
-        item.y1 - item.y0,
-        {
-          color: item.color({
-            hovering,
-            ctx: this.canvas2dContext,
-            transitionProgress: 0,
-            bounds,
-          }),
-        }
-      );
+      let color = null;
+
+      try {
+        color = item.color({
+          hovering,
+          ctx: this.canvas2dContext,
+          transitionProgress: 0,
+          bounds,
+        });
+
+        this.canvasUtils.fillRect(
+          item.x0,
+          item.y0,
+          item.x1 - item.x0,
+          item.y1 - item.y0,
+          {
+            color: color,
+          }
+        );
+      } catch (e) {
+        console.warn(e);
+      }
+
       if (depth <= 2) {
         this.canvasUtils.fillText(item.text, bounds, fontSize);
       }
