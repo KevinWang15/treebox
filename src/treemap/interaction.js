@@ -40,7 +40,7 @@ export function onMouseMove({ x, y }) {
   if (
     this.isMouseDown &&
     this.lastMouseDownPos &&
-    selectionAreaTriggered.call(this, { x: x, y: y })
+    selectionAreaTriggered.call(this, { x, y })
   ) {
     let x0 = limitTo(x, 0, this.domElementRect.width);
     let x1 = limitTo(this.lastMouseDownPos.x, 0, this.domElementRect.width);
@@ -54,14 +54,19 @@ export function onMouseMove({ x, y }) {
     this.selectionAreaElement.style.width = Math.abs(x0 - x1) + "px";
     this.selectionAreaElement.style.height = Math.abs(y0 - y1) + "px";
 
-    this.selectionAreaViewPort = this.viewportUtils.reverseTransform(
-      normalizeViewport({
-        x0,
-        y0,
-        x1,
-        y1,
-      })
-    );
+    if (Math.abs(x0 - x1) * Math.abs(y0 - y1) < 400) {
+      // ignore small selections
+      this.selectionAreaViewPort = null;
+    } else {
+      this.selectionAreaViewPort = this.viewportUtils.reverseTransform(
+        normalizeViewport({
+          x0,
+          y0,
+          x1,
+          y1,
+        })
+      );
+    }
   }
 }
 
@@ -98,16 +103,6 @@ export function onMouseUpEventListener(e) {
   this.isMouseDown = false;
   this.selectionAreaElement.style.display = "none";
   if (this.selectionAreaViewPort) {
-    if (
-      Math.abs(this.selectionAreaViewPort.x1 - this.selectionAreaViewPort.x0) *
-        Math.abs(
-          this.selectionAreaViewPort.y1 - this.selectionAreaViewPort.y0
-        ) <
-      400
-    ) {
-      this.selectionAreaViewPort = null;
-      return;
-    }
     this.viewportHistory.push({
       node: this.activeNode,
       viewport: this.selectionAreaViewPort,
