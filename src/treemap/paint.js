@@ -17,9 +17,6 @@ export function paintLayer(
     return;
   }
 
-  if (depth <= 2) {
-    this.updateLayerFontSize(data);
-  }
   for (let item of data) {
     let bounds = this.viewportUtils.transform({
       x0: item.x0,
@@ -28,8 +25,8 @@ export function paintLayer(
       y1: item.y1,
     });
 
-    // let fontSize = 100;
-    let fontSize = item.fontSize;
+    let fontSize = Math.round((bounds.x1-bounds.x0) / 10);
+
     const paintNormal = () => {
       let color = null;
 
@@ -109,36 +106,6 @@ export function repaint() {
   this.canvasElement.width = this.domElementRect.width * this.pixelRatio;
   this.canvasElement.height = this.domElementRect.height * this.pixelRatio;
 
-  if (!this.activeNode.children) {
-    this.updateLayerFontSize([this.activeNode]);
-  } else {
-    this.updateLayerFontSize(this.activeNode.children);
-  }
   this.clearRectAndPaintLayer(this.activeNode, { hovering: false, depth: -1 });
 }
 
-export function updateLayerFontSize(data) {
-  if (!data) {
-    return;
-  }
-
-  // approximate size using width only, to avoid sqrt() and improve performance
-  const factor =
-    (Math.ceil(10000 / (this.viewport.x1 - this.viewport.x0)) *
-      this.pixelRatio) /
-    50;
-
-  for (const item of data) {
-    if (
-      (item.x0 < this.viewport.x0 ||
-        item.y0 < this.viewport.y0 ||
-        item.x1 > this.viewport.x1 ||
-        item.y1 > this.viewport.y1)
-    ) {
-      continue;
-    }
-
-    item.fontSize = item.w * factor; // this is super expensive.. hurts performance so bad
-    // item.fontSize = item.w + factor;
-  }
-}

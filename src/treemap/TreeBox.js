@@ -12,7 +12,6 @@ import {
   clearRectAndPaintLayer,
   paintLayer,
   repaint,
-  updateLayerFontSize,
 } from "./paint";
 
 export default class TreeBox {
@@ -41,7 +40,6 @@ export default class TreeBox {
   paintLayer = paintLayer.bind(this);
   clearRectAndPaintLayer = clearRectAndPaintLayer.bind(this);
   repaint = repaint.bind(this);
-  updateLayerFontSize = updateLayerFontSize.bind(this);
 
   // interactions
   onMouseMove = onMouseMove.bind(this);
@@ -103,7 +101,6 @@ export default class TreeBox {
       depth: 0,
     });
 
-    this.updateLayerFontSize(this.activeNode.children);
     this.paintLayer(this.activeNode.children, { hovering: false, depth: 0 });
     this.addEventListeners();
   }
