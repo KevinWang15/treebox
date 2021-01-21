@@ -37,6 +37,11 @@ export function paintLayer(
           bounds,
         });
 
+        if (hovering) {
+          this.canvas2dContext.save();
+          this.canvas2dContext.filter = "brightness(110%) saturate(120%)";
+          this.canvas2dContext.globalAlpha = 0.6;
+        }
         this.canvasUtils.fillRect(
           item.x0,
           item.y0,
@@ -46,6 +51,10 @@ export function paintLayer(
             color: color,
           }
         );
+
+        if (hovering) {
+          this.canvas2dContext.restore();
+        }
       } catch (e) {
         console.warn(e);
       }
@@ -83,7 +92,7 @@ export function paintLayer(
             item.text,
             bounds,
             fontSize,
-            Color("white").opaquer(-transitionProgress)
+            "#FFFFFF"
           );
         }
         this.canvas2dContext.restore();

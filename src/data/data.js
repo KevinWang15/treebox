@@ -1,5 +1,3 @@
-import Color from "color";
-
 function genColor() {
   const colors = [
     "#00B3A4",
@@ -16,15 +14,6 @@ function genColor() {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-const addColorStop = (gradient, offset, color, { hovering }) => {
-  if (hovering) {
-    const alpha = color.substr(7);
-    color = Color(color).lighten(0.1).hex() + alpha;
-  }
-
-  gradient.addColorStop(offset, color);
-};
-
 export function genData(layers = 4) {
   const result = [];
 
@@ -33,11 +22,10 @@ export function genData(layers = 4) {
     const c = genColor();
     result.push({
       text: `${layers}-${i}`,
-      color: ({ ctx, hovering, item, bounds }) => {
+      color: ({ ctx, item, bounds }) => {
         const gradient = ctx.createLinearGradient(0, bounds.y1, 0, bounds.y0);
-
-        addColorStop(gradient, 0, c + "FF", { hovering });
-        addColorStop(gradient, 1, c + "AA", { hovering });
+        gradient.addColorStop(0, c + "FF");
+        gradient.addColorStop(1, c + "AA");
         return gradient;
       },
       children,
