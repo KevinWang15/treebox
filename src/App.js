@@ -13,13 +13,13 @@ class App extends React.Component {
       <div
         style={{
           width: "100%",
-          height: 800,
+          height: 600,
           position: "absolute",
           boxSizing: "border-box",
           top: "50%",
           transform: "translateY(-50%)",
           padding: 50,
-          background: "#CCC",
+          // background: "#CCC",
         }}
       >
         <div
