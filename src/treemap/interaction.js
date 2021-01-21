@@ -81,11 +81,7 @@ export function onClickEventListener(e) {
   if (!this.activeNode.children) {
     return;
   }
-  if (
-    this.lastHoveringItem &&
-    (!this.lastHoveringItem.parent ||
-      this.lastHoveringItem.parent.children.length > 1)
-  ) {
+  if (this.lastHoveringItem) {
     this.zoomIn(this.lastHoveringItem);
   }
 }
