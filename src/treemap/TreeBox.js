@@ -8,11 +8,7 @@ import {
 } from "./interaction";
 import { layoutLayer } from "./layout";
 import { transitionTo, zoomIn, zoomOut } from "./transition";
-import {
-  clearRectAndPaintLayer,
-  paintLayer,
-  repaint,
-} from "./paint";
+import { clearRectAndPaintLayer, paintLayer, repaint } from "./paint";
 
 export default class TreeBox {
   // members
@@ -111,6 +107,11 @@ export default class TreeBox {
     this.selectionAreaElement.parentElement.removeChild(
       this.selectionAreaElement
     );
+    this.domElement = null;
+    this.canvasElement = null;
+    this.canvas2dContext = null;
+    this.viewportHistory = null;
+    this.viewport = null;
   }
 
   onMouseMoveEventListener = (e) => {
