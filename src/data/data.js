@@ -16,18 +16,12 @@ function genColor() {
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
-const addColorStop = (
-  gradient,
-  offset,
-  color,
-  { hovering, transitionProgress }
-) => {
+const addColorStop = (gradient, offset, color, { hovering }) => {
   if (hovering) {
     const alpha = color.substr(7);
     color = Color(color).lighten(0.1).hex() + alpha;
   }
 
-  color = Color(color).opaquer(-transitionProgress);
   gradient.addColorStop(offset, color);
 };
 
@@ -39,11 +33,11 @@ export function genData(layers = 4) {
     const c = genColor();
     result.push({
       text: `${layers}-${i}`,
-      color: ({ ctx, hovering, transitionProgress, item, bounds }) => {
+      color: ({ ctx, hovering, item, bounds }) => {
         const gradient = ctx.createLinearGradient(0, bounds.y1, 0, bounds.y0);
 
-        addColorStop(gradient, 0, c + "FF", { hovering, transitionProgress });
-        addColorStop(gradient, 1, c + "AA", { hovering, transitionProgress });
+        addColorStop(gradient, 0, c + "FF", { hovering });
+        addColorStop(gradient, 1, c + "AA", { hovering });
         return gradient;
       },
       children,

@@ -25,7 +25,7 @@ export function paintLayer(
       y1: item.y1,
     });
 
-    let fontSize = Math.round((bounds.x1-bounds.x0) / 10);
+    let fontSize = Math.round((bounds.x1 - bounds.x0) / 10);
 
     const paintNormal = () => {
       let color = null;
@@ -34,7 +34,6 @@ export function paintLayer(
         color = item.color({
           hovering,
           ctx: this.canvas2dContext,
-          transitionProgress: 0,
           bounds,
         });
 
@@ -64,6 +63,8 @@ export function paintLayer(
         depth: depth + 1,
       });
       if (this.transitionTargetNode === item) {
+        this.canvas2dContext.save();
+        this.canvas2dContext.globalAlpha = 1 - transitionProgress;
         this.canvasUtils.fillRect(
           item.x0,
           item.y0,
@@ -73,7 +74,6 @@ export function paintLayer(
             color: item.color({
               hovering,
               ctx: this.canvas2dContext,
-              transitionProgress,
               bounds,
             }),
           }
@@ -86,6 +86,7 @@ export function paintLayer(
             Color("white").opaquer(-transitionProgress)
           );
         }
+        this.canvas2dContext.restore();
       } else if (this.activeNode !== item) {
         paintNormal();
       }
@@ -108,4 +109,3 @@ export function repaint() {
 
   this.clearRectAndPaintLayer(this.activeNode, { hovering: false, depth: -1 });
 }
-
