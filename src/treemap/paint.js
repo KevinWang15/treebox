@@ -25,7 +25,7 @@ export function paintLayer(
       y1: item.y1,
     });
 
-    let fontSize = Math.round((bounds.x1 - bounds.x0) / 10);
+    let fontSize = Math.min(Math.round((bounds.x1 - bounds.x0) / 10), 160);
 
     const paintNormal = () => {
       let color = null;
