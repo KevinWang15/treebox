@@ -9,10 +9,7 @@ export function clearRectAndPaintLayer(e, p) {
  * low-level api to actually draw to the canvas.
  * will be called multiple times during a transition
  */
-export function paintLayer(
-  data,
-  { hovering, transitionProgress = 0, depth }
-) {
+export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
   if (!data || depth > 2) {
     return;
   }
@@ -25,18 +22,19 @@ export function paintLayer(
       y1: item.y1,
     });
 
-    let fontSize = Math.min(Math.round((bounds.x1 - bounds.x0) / 10), 160);
-
-    const paintNormal = () => {
-      let color = null;
-
-      try {
-        color = item.color({
+    const itemColor = item.color
+      ? item.color({
           hovering,
           ctx: this.canvas2dContext,
           bounds,
-        });
+          item,
+        })
+      : null;
 
+    let fontSize = Math.min(Math.round((bounds.x1 - bounds.x0) / 10), 160);
+
+    const doPaintNode = () => {
+      try {
         if (hovering) {
           this.canvas2dContext.save();
           this.canvas2dContext.filter = "brightness(110%) saturate(120%)";
@@ -48,7 +46,7 @@ export function paintLayer(
           item.x1 - item.x0,
           item.y1 - item.y0,
           {
-            color: color,
+            color: itemColor,
           }
         );
 
@@ -79,24 +77,17 @@ export function paintLayer(
           item.x1 - item.x0,
           item.y1 - item.y0,
           {
-            color: item.color({
-              hovering,
-              ctx: this.canvas2dContext,
-              bounds,
-            }),
+            color: itemColor,
           }
         );
         if (depth <= 2) {
-          this.canvasUtils.fillText(
-            item.text,
-            bounds,
-            fontSize,
-            "#FFFFFF"
-          );
+          this.canvasUtils.fillText(item.text, bounds, fontSize, "#FFFFFF");
         }
         this.canvas2dContext.restore();
-      } else if (this.activeNode !== item) {
-        paintNormal();
+      } else {
+        if (this.activeNode !== item) {
+          doPaintNode();
+        }
       }
     } else {
       this.canvasUtils.clearRect(
@@ -105,7 +96,7 @@ export function paintLayer(
         item.x1 - item.x0,
         item.y1 - item.y0
       );
-      paintNormal();
+      doPaintNode();
     }
   }
 }
