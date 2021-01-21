@@ -11,7 +11,7 @@ export function clearRectAndPaintLayer(e, p) {
  */
 export function paintLayer(
   data,
-  { hovering, transitionProgress = 0, depth, transitionDirection = 1 }
+  { hovering, transitionProgress = 0, depth }
 ) {
   if (!data || depth > 2) {
     return;
@@ -68,7 +68,6 @@ export function paintLayer(
       this.paintLayer(item.children, {
         hovering,
         transitionProgress,
-        transitionDirection,
         depth: depth + 1,
       });
       if (this.transitionTargetNode === item) {

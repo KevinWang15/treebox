@@ -3,6 +3,7 @@
   "version": "0.0.8",
   "main": "./build/treebox.js",
   "dependencies": {
+    "lodash-es": "^4.17.20",
     "react": "^17.0.1",
     "react-dom": "^17.0.1"
   },

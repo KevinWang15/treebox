@@ -112,12 +112,18 @@ export function onMouseUpEventListener(e) {
       node: this.activeNode,
       viewport: this.selectionAreaViewPort,
     });
-    this.transitionTo(this.selectionAreaViewPort, {
-      transitionDirection: 1,
-    }).then(() => {
+    this.transitionTo(this.selectionAreaViewPort).then(() => {
       this.repaint();
     });
     this.selectionAreaViewPort = null;
+  }
+}
+
+export function onMouseWheelEventListener(e) {
+  if (e.deltaY < -20) {
+    this.zoomOutThrottled();
+  } else if (e.deltaY > 20) {
+    this.undoZoomOutThrottled();
   }
 }
 

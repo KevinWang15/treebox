@@ -81,8 +81,6 @@ const pixelRatio = 2;
 
 # Roadmap
 
-- support mouse wheel to navigate viewport stack
-- more performance optimization
 - more customization options
 - github.io page
 - automated testing

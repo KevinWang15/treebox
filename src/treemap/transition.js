@@ -1,6 +1,6 @@
 import { calcTransitioningViewport } from "./viewport";
 
-export function transitionTo(viewport, { transitionDirection = 1 }) {
+export function transitionTo(viewport) {
   if (this.viewportTransitionInProgress) {
     return Promise.reject("viewportTransition in progress");
   }
@@ -8,7 +8,7 @@ export function transitionTo(viewport, { transitionDirection = 1 }) {
   return new Promise((resolve) => {
     const transitionStart = +new Date();
     const transitionLength = 200;
-    const pristineViewport = {...this.viewport};
+    const pristineViewport = { ...this.viewport };
 
     let onAnimationFrame = () => {
       let progress = (+new Date() - transitionStart) / transitionLength;
@@ -24,7 +24,6 @@ export function transitionTo(viewport, { transitionDirection = 1 }) {
         hovering: false,
         transitionProgress: progress,
         depth: 0,
-        transitionDirection,
       });
 
       if (progress < 1) {
@@ -47,6 +46,7 @@ export function zoomIn(targetNode) {
     viewport: targetNode,
   };
   this.viewportHistory.push(nodeAndViewport);
+  this.viewportHistoryUndoStack.splice(0);
 
   this.transitionTo(targetNode, {}).then(() => {
     this.activeNode = targetNode;
@@ -62,7 +62,10 @@ export function zoomOut() {
   if (this.viewportTransitionInProgress) {
     return;
   }
-  this.viewportHistory.pop();
+  let popped = this.viewportHistory.pop();
+  if (popped) {
+    this.viewportHistoryUndoStack.push(popped);
+  }
   let lastNodeAndViewport = this.viewportHistory[
     this.viewportHistory.length - 1
   ];
@@ -72,11 +75,35 @@ export function zoomOut() {
   this.activeNode = lastNodeAndViewport.node;
 
   this.transitionTargetNode = this.activeNode;
-  this.transitionTo(lastNodeAndViewport.viewport, {
-    transitionDirection: -1,
-  }).then(() => {
+  this.transitionTo(lastNodeAndViewport.viewport).then(() => {
     this.transitionTargetNode = null;
     this.lastHoveringItem = null;
+    this.repaint();
+    setTimeout(() => {
+      this.onMouseMove({ x: this.lastMousePos.x, y: this.lastMousePos.y });
+    });
+  });
+}
+
+export function undoZoomOut() {
+  if (this.viewportTransitionInProgress) {
+    return;
+  }
+  if (!this.viewportHistoryUndoStack.length) {
+    return;
+  }
+
+  let lastNodeAndViewport = this.viewportHistoryUndoStack.pop();
+  if (!lastNodeAndViewport) {
+    return;
+  }
+  this.viewportHistory.push(lastNodeAndViewport);
+
+  this.transitionTargetNode = lastNodeAndViewport.node;
+
+  this.transitionTo(lastNodeAndViewport.viewport).then(() => {
+    this.activeNode = lastNodeAndViewport.node;
+    this.transitionTargetNode = null;
     this.repaint();
     setTimeout(() => {
       this.onMouseMove({ x: this.lastMousePos.x, y: this.lastMousePos.y });

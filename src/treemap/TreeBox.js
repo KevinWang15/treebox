@@ -5,10 +5,12 @@ import {
   onMouseDownEventListener,
   onMouseMove,
   onMouseUpEventListener,
+  onMouseWheelEventListener,
 } from "./interaction";
 import { layoutLayer } from "./layout";
-import { transitionTo, zoomIn, zoomOut } from "./transition";
+import { transitionTo, undoZoomOut, zoomIn, zoomOut } from "./transition";
 import { clearRectAndPaintLayer, paintLayer, repaint } from "./paint";
+import { throttle } from "lodash-es";
 
 export default class TreeBox {
   // members
@@ -21,6 +23,7 @@ export default class TreeBox {
 
   viewport = { x0: 0, x1: 0, y0: 0, y1: 0 };
   viewportHistory = [];
+  viewportHistoryUndoStack = [];
 
   // root node of user input
   rootNode;
@@ -42,11 +45,21 @@ export default class TreeBox {
   onClickEventListener = onClickEventListener.bind(this);
   onMouseDownEventListener = onMouseDownEventListener.bind(this);
   onMouseUpEventListener = onMouseUpEventListener.bind(this);
+  onMouseWheelEventListener = onMouseWheelEventListener.bind(this);
 
   // transitions
   transitionTo = transitionTo.bind(this);
   zoomIn = zoomIn.bind(this);
   zoomOut = zoomOut.bind(this);
+  zoomOutThrottled = throttle(this.zoomOut, 350, {
+    leading: true,
+    trailing: false,
+  });
+  undoZoomOut = undoZoomOut.bind(this);
+  undoZoomOutThrottled = throttle(this.undoZoomOut, 350, {
+    leading: true,
+    trailing: false,
+  });
 
   // canvas utils
   canvasUtils = {
@@ -128,6 +141,7 @@ export default class TreeBox {
     document.addEventListener("mousemove", this.onMouseMoveEventListener);
     document.addEventListener("mousedown", this.onMouseDownEventListener);
     document.addEventListener("mouseup", this.onMouseUpEventListener);
+    document.addEventListener("wheel", this.onMouseWheelEventListener);
     this.canvasElement.addEventListener("click", this.onClickEventListener);
   }
 
@@ -135,6 +149,7 @@ export default class TreeBox {
     document.removeEventListener("mousemove", this.onMouseMoveEventListener);
     document.removeEventListener("mousedown", this.onMouseDownEventListener);
     document.removeEventListener("mouseup", this.onMouseUpEventListener);
+    document.removeEventListener("wheel", this.onMouseWheelEventListener);
     this.canvasElement.removeEventListener("click", this.onClickEventListener);
   }
 
