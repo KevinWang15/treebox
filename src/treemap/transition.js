@@ -7,8 +7,8 @@ export function transitionTo(viewport, { transitionDirection = 1 }) {
   this.viewportTransitionInProgress = true;
   return new Promise((resolve) => {
     const transitionStart = +new Date();
-    const transitionLength = 300;
-    const pristineViewport = this.viewport;
+    const transitionLength = 200;
+    const pristineViewport = {...this.viewport};
 
     let onAnimationFrame = () => {
       let progress = (+new Date() - transitionStart) / transitionLength;
