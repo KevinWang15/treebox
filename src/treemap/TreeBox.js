@@ -120,6 +120,7 @@ export default class TreeBox {
     this.selectionAreaElement.parentElement.removeChild(
       this.selectionAreaElement
     );
+    this.canvasElement.parentElement.removeChild(this.canvasElement);
     this.domElement = null;
     this.canvasElement = null;
     this.canvas2dContext = null;

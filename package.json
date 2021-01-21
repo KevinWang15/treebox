@@ -1,6 +1,6 @@
 {
   "name": "@kevinwang15/treebox",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "./build/treebox.js",
   "dependencies": {
     "lodash-es": "^4.17.20",
