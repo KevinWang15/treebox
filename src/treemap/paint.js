@@ -17,6 +17,9 @@ export function paintLayer(
     return;
   }
 
+  if (depth <= 2) {
+    this.updateLayerFontSize(data);
+  }
   for (let item of data) {
     let bounds = this.viewportUtils.transform({
       x0: item.x0,
@@ -107,32 +110,35 @@ export function repaint() {
   this.canvasElement.height = this.domElementRect.height * this.pixelRatio;
 
   if (!this.activeNode.children) {
-    this.updateLayerFontSize([this.activeNode], { depth: 0 });
+    this.updateLayerFontSize([this.activeNode]);
   } else {
-    this.updateLayerFontSize(this.activeNode.children, { depth: 0 });
+    this.updateLayerFontSize(this.activeNode.children);
   }
   this.clearRectAndPaintLayer(this.activeNode, { hovering: false, depth: -1 });
 }
 
-export function updateLayerFontSize(data, { depth = 0 } = { depth: 0 }) {
+export function updateLayerFontSize(data) {
   if (!data) {
     return;
   }
 
-  const viewportSize =
-    (this.viewport.x1 - this.viewport.x0) *
-    (this.viewport.y1 - this.viewport.y0);
+  // approximate size using width only, to avoid sqrt() and improve performance
+  const factor =
+    (Math.ceil(10000 / (this.viewport.x1 - this.viewport.x0)) *
+      this.pixelRatio) /
+    50;
 
-  for (let item of data) {
-    if (item.children && depth <= 2) {
-      this.updateLayerFontSize(item.children, { depth: depth + 1 });
+  for (const item of data) {
+    if (
+      (item.x0 < this.viewport.x0 ||
+        item.y0 < this.viewport.y0 ||
+        item.x1 > this.viewport.x1 ||
+        item.y1 > this.viewport.y1)
+    ) {
+      continue;
     }
-  }
 
-  for (let item of data) {
-    item.fontSize =
-        Math.sqrt((item.x1 - item.x0) *
-        (item.y1 - item.y0) / viewportSize)
-       * 200 * this.pixelRatio;
+    item.fontSize = item.w * factor; // this is super expensive.. hurts performance so bad
+    // item.fontSize = item.w + factor;
   }
 }

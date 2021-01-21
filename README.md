@@ -81,7 +81,6 @@ const pixelRatio = 2;
 
 # Roadmap
 
-- better font animation that will not kill performance
 - more customization options
 - github.io page
 - automated testing
