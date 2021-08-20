@@ -6883,9 +6883,9 @@ locate-path@^5.0.0:
     p-locate "^4.1.0"
 
 lodash-es@^4.17.20:
-  version "4.17.20"
-  resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.20.tgz#29f6332eefc60e849f869c264bc71126ad61e8f7"
-  integrity sha512-JD1COMZsq8maT6mnuz1UMV0jvYD0E0aUsSOdrr1/nAG3dhqQXwRRgeW0cSqH1U43INKcqxaiVIQNOUDld7gRDA==
+  version "4.17.21"
+  resolved "https://registry.yarnpkg.com/lodash-es/-/lodash-es-4.17.21.tgz#43e626c46e6591b7750beb2b50117390c609e3ee"
+  integrity sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==
 
 lodash._reinterpolate@^3.0.0:
   version "3.0.0"
@@ -8716,9 +8716,9 @@ prepend-http@^1.0.0:
   integrity sha1-1PRWKwzjaW5BrFLQ4ALlemNdxtw=
 
 prettier@^2.2.1:
-  version "2.2.1"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.2.1.tgz#795a1a78dd52f073da0cd42b21f9c91381923ff5"
-  integrity sha512-PqyhM2yCjg/oKkFPtTGUojv7gnZAoG80ttl45O6x2Ug/rMJw4wcc9k6aaf2hibP7BGVCCM33gZoGjyvt9mm16Q==
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.3.2.tgz#ef280a05ec253712e486233db5c6f23441e7342d"
+  integrity sha512-lnJzDfJ66zkMy58OL5/NY5zp70S7Nz6KqcKkXYzn2tMVrNxvbqaBpg7H3qHaLxCJ5lNMsGuM8+ohS7cZrthdLQ==
 
 pretty-bytes@^5.3.0:
   version "5.5.0"
@@ -10992,10 +10992,10 @@ wbuf@^1.1.0, wbuf@^1.7.3:
   dependencies:
     minimalistic-assert "^1.0.0"
 
-web-vitals@^0.2.4:
-  version "0.2.4"
-  resolved "https://registry.yarnpkg.com/web-vitals/-/web-vitals-0.2.4.tgz#ec3df43c834a207fd7cdefd732b2987896e08511"
-  integrity sha512-6BjspCO9VriYy12z356nL6JBS0GYeEcA457YyRzD+dD6XYCQ75NKhcOHUMHentOE7OcVCIXXDvOm0jKFfQG2Gg==
+web-vitals@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/web-vitals/-/web-vitals-2.1.0.tgz#ebf5428875ab5bfc1056c2e80cd177001287de7b"
+  integrity sha512-npEyJP8jHf3J71t1tRTEtz9FeKp8H2udWJUUq5ykfPhhstr//TUxiYhIEzLNwk4zv2ybAilMn7v7N6Mxmuitmg==
 
 webidl-conversions@^5.0.0:
   version "5.0.0"
