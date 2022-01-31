@@ -81,6 +81,10 @@ export default class TreeBox {
   // how many pixels moved before drawing a selection area
   SELECTION_AREA_TRIGGER_THRESHOLD = 20;
 
+  search = {
+    element: null,
+  };
+
   constructor({ data, domElement, eventHandler, pixelRatio = 1 }) {
     this.pixelRatio = pixelRatio;
     this.eventHandler = eventHandler;
@@ -184,5 +188,32 @@ export default class TreeBox {
     });
     document.body.appendChild(element);
     return element;
+  }
+
+  showSearch() {
+    if (!this.search.element) {
+      this.search.element = document.createElement("div");
+      this.search.element.className = "searchbox";
+      const input = document.createElement("input");
+      this.search.element.appendChild(input);
+      this.domElement.appendChild(this.search.element);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          this.hideSearch();
+          return;
+        }
+      });
+    }
+    const input = this.search.element.getElementsByTagName("input")[0];
+    input.focus();
+    input.select();
+  }
+
+  hideSearch() {
+    if (!this.search.element) {
+      return;
+    }
+    this.search.element.parentElement.removeChild(this.search.element);
+    this.search.element = null;
   }
 }

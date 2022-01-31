@@ -44,6 +44,10 @@ class App extends React.Component {
               treebox.repaint();
             });
             document.addEventListener("keydown", (e) => {
+              if (e.key === "f" && e.metaKey) {
+                e.preventDefault();
+                treebox.showSearch();
+              }
               if (e.key === "Escape") {
                 treebox.zoomOut();
               }
