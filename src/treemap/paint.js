@@ -1,5 +1,3 @@
-import Color from "color";
-
 export function clearRectAndPaintLayer(e, p) {
   this.canvasUtils.clearRect(e.x0, e.y0, e.x1 - e.x0, e.y1 - e.y0);
   this.paintLayer([e], p);
