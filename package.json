@@ -5,7 +5,8 @@
   "dependencies": {
     "lodash-es": "^4.17.20",
     "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react-dom": "^17.0.1",
+    "sass": "^1.49.7"
   },
   "description": "Treebox is an interactive TreeMap visualization",
   "keywords": [
@@ -16,10 +17,10 @@
   ],
   "scripts": {
     "build-lib": "BUILD_TARGET=lib react-app-rewired build",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-app-rewired eject",
     "prepublish": "npm run build-lib"
   },
   "eslintConfig": {
@@ -34,8 +35,8 @@
     "@testing-library/user-event": "^13.2.1",
     "prettier": "^2.2.1",
     "pretty-quick": "^3.1.0",
-    "react-app-rewired": "^2.1.8",
-    "react-scripts": "4.0.1",
+    "react-app-rewired": "^2.1.11",
+    "react-scripts": "^4.0.3",
     "web-vitals": "^2.1.0",
     "webpack-bundle-analyzer": "^4.3.0"
   },
