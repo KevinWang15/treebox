@@ -14,7 +14,7 @@ export function layoutLayer(data, { x0, x1, y0, y1, depth }) {
     item.w = x1 - x0;
     item.layoutOk = true;
 
-    if (item.children) {
+    if (item.children && item.children.length) {
       layoutLayer(item.children, {
         x0: x0,
         x1: x1,
