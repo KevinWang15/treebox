@@ -83,7 +83,7 @@ export function onClickEventListener(e) {
   if (this.transitionTargetNode) {
     return;
   }
-  if (!this.activeNode.children) {
+  if (!this.lastHoveringItem.children || !this.lastHoveringItem.children.length) {
     return;
   }
   if (this.lastHoveringItem) {
