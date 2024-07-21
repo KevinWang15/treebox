@@ -4,10 +4,10 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
   this.canvas2dContext.save();
   this.canvas2dContext.beginPath();
   this.canvas2dContext.rect(
-    bounds.x0 + this.BOX_MARGIN,
-    bounds.y0 + this.BOX_MARGIN,
-    bounds.x1 - bounds.x0 - this.BOX_MARGIN * 2,
-    bounds.y1 - bounds.y0 - this.BOX_MARGIN * 2
+      bounds.x0 + this.BOX_MARGIN,
+      bounds.y0 + this.BOX_MARGIN,
+      bounds.x1 - bounds.x0 - this.BOX_MARGIN * 2,
+      bounds.y1 - bounds.y0 - this.BOX_MARGIN * 2
   );
   this.canvas2dContext.clip();
 
@@ -15,11 +15,41 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
   this.canvas2dContext.fillStyle = fillStyle;
   this.canvas2dContext.textAlign = "center";
   this.canvas2dContext.textBaseline = "middle";
-  this.canvas2dContext.fillText(
-    text,
-    (bounds.x0 + bounds.x1) / 2,
-    (bounds.y0 + bounds.y1) / 2
-  );
+
+  const maxWidth = bounds.x1 - bounds.x0 - this.BOX_MARGIN * 2;
+  const centerX = (bounds.x0 + bounds.x1) / 2;
+  const centerY = (bounds.y0 + bounds.y1) / 2;
+  const lineHeight = fontSize * 1.2;
+
+  const words = text.split(' ');
+  let line = '';
+  let lines = [];
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + ' ';
+    const metrics = this.canvas2dContext.measureText(testLine);
+    const testWidth = metrics.width;
+
+    if (testWidth > maxWidth && n > 0) {
+      lines.push(line.trim());
+      line = words[n] + ' ';
+    } else {
+      line = testLine;
+    }
+  }
+  lines.push(line.trim());
+
+  const totalHeight = lines.length * lineHeight;
+  let startY = centerY - (totalHeight / 2) + (lineHeight / 2);
+
+  lines.forEach((line, index) => {
+    this.canvas2dContext.fillText(
+        line,
+        centerX,
+        startY + (index * lineHeight)
+    );
+  });
+
   this.canvas2dContext.restore();
 }
 
