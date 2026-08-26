@@ -223,7 +223,9 @@ test("updates the canvas backing store when the display pixel ratio changes", ()
 
   expect(treebox.setPixelRatio(2)).toBe(true);
   expect(treebox.pixelRatio).toBe(2);
-  expect(Number(treebox.canvasElement.style.zoom)).toBe(0.5);
+  expect(treebox.canvasElement.style.zoom).toBeFalsy();
+  expect(treebox.canvasElement.style.width).toBe("320px");
+  expect(treebox.canvasElement.style.height).toBe("180px");
   expect(treebox.canvasElement).toMatchObject({ width: 640, height: 360 });
   expect(treebox.rootNode).toMatchObject({ x1: width, y1: height });
   expect(treebox.setPixelRatio(2)).toBe(false);

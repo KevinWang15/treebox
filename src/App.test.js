@@ -69,7 +69,7 @@ test("renders the interactive demo and safely handles root-level controls", () =
     initialPixelRatioQuery.addEventListener.mock.calls[0][1]();
   });
   expect(window.treebox.pixelRatio).toBe(2);
-  expect(Number(window.treebox.canvasElement.style.zoom)).toBe(0.5);
+  expect(window.treebox.canvasElement.style.zoom).toBeFalsy();
   expect(initialPixelRatioQuery.removeEventListener).toHaveBeenCalledWith(
     "change",
     expect.any(Function)

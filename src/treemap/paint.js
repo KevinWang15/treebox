@@ -153,9 +153,13 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
 }
 
 function syncCanvasDimensions() {
-  this.domElementRect = this.domElement.getBoundingClientRect();
-  this.canvasElement.width = this.domElement.clientWidth * this.pixelRatio;
-  this.canvasElement.height = this.domElement.clientHeight * this.pixelRatio;
+  const width = this.domElement.clientWidth;
+  const height = this.domElement.clientHeight;
+  this.canvasElement.width = Math.round(width * this.pixelRatio);
+  this.canvasElement.height = Math.round(height * this.pixelRatio);
+  this.canvasElement.style.width = width + "px";
+  this.canvasElement.style.height = height + "px";
+  this.domElementRect = this.canvasElement.getBoundingClientRect();
 }
 
 function scaleViewport(viewport, previousBounds, nextBounds) {

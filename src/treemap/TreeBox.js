@@ -127,7 +127,6 @@ export default class TreeBox {
     this.canvasElement = this.createCanvasElement(domElement);
     this.selectionAreaElement = this.createSelectionAreaElement();
 
-    this.canvasElement.style.zoom = 1 / this.pixelRatio;
     this.rootNode = {
       children: data,
       x0: 0,
@@ -198,7 +197,6 @@ export default class TreeBox {
     }
 
     this.pixelRatio = nextPixelRatio;
-    this.canvasElement.style.zoom = 1 / nextPixelRatio;
     this.repaint();
     return true;
   }
@@ -312,8 +310,8 @@ export default class TreeBox {
   createCanvasElement(domElement) {
     this.domElementRect = domElement.getBoundingClientRect();
     const canvas = document.createElement("CANVAS");
-    canvas.width = domElement.clientWidth * this.pixelRatio;
-    canvas.height = domElement.clientHeight * this.pixelRatio;
+    canvas.width = Math.round(domElement.clientWidth * this.pixelRatio);
+    canvas.height = Math.round(domElement.clientHeight * this.pixelRatio);
     canvas.tabIndex = 0;
     canvas.setAttribute("role", "application");
     canvas.setAttribute(
@@ -321,6 +319,8 @@ export default class TreeBox {
       "Interactive treemap. Tap or click a group to zoom in. With a keyboard, use the arrow keys to choose a group, Enter to zoom in, and Escape to zoom out."
     );
     canvas.style.display = "block";
+    canvas.style.width = domElement.clientWidth + "px";
+    canvas.style.height = domElement.clientHeight + "px";
     canvas.style.touchAction = "none";
     canvas.style.userSelect = "none";
     domElement.appendChild(canvas);

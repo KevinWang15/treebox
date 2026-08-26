@@ -1,4 +1,20 @@
-import { reverseViewportTransform } from "./viewport";
+import { reverseViewportTransform, viewportTransform } from "./viewport";
+
+test("forward transforms coordinates into the canvas backing store", () => {
+  const context = {
+    viewport: { x0: 10, x1: 110, y0: 20, y1: 220 },
+    canvasElement: {
+      width: 600,
+      height: 300,
+      clientWidth: 300,
+      clientHeight: 150,
+    },
+  };
+
+  expect(
+    viewportTransform.call(context, { x0: 10, x1: 60, y0: 20, y1: 120 })
+  ).toEqual({ x0: 0, x1: 300, y0: 0, y1: 150 });
+});
 
 test("reverse transforms coordinates against the rendered canvas size", () => {
   const context = {

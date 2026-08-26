@@ -23,10 +23,10 @@ export function viewportTransform({ x0, y0, x1, y1 }) {
   const vpw = this.viewport.x1 - this.viewport.x0;
   const vph = this.viewport.y1 - this.viewport.y0;
   return {
-    x0: ((x0 - this.viewport.x0) / vpw) * this.canvasElement.clientWidth,
-    x1: ((x1 - this.viewport.x0) / vpw) * this.canvasElement.clientWidth,
-    y0: ((y0 - this.viewport.y0) / vph) * this.canvasElement.clientHeight,
-    y1: ((y1 - this.viewport.y0) / vph) * this.canvasElement.clientHeight,
+    x0: ((x0 - this.viewport.x0) / vpw) * this.canvasElement.width,
+    x1: ((x1 - this.viewport.x0) / vpw) * this.canvasElement.width,
+    y0: ((y0 - this.viewport.y0) / vph) * this.canvasElement.height,
+    y1: ((y1 - this.viewport.y0) / vph) * this.canvasElement.height,
   };
 }
 
@@ -34,11 +34,9 @@ export function reverseViewportTransform({ x0, y0, x1, y1 }) {
   const vpw = this.viewport.x1 - this.viewport.x0;
   const vph = this.viewport.y1 - this.viewport.y0;
   const renderedWidth =
-    this.domElementRect.width ||
-    this.canvasElement.clientWidth / this.pixelRatio;
+    this.domElementRect.width || this.canvasElement.width / this.pixelRatio;
   const renderedHeight =
-    this.domElementRect.height ||
-    this.canvasElement.clientHeight / this.pixelRatio;
+    this.domElementRect.height || this.canvasElement.height / this.pixelRatio;
   return {
     x0: (x0 * vpw) / renderedWidth + this.viewport.x0,
     x1: (x1 * vpw) / renderedWidth + this.viewport.x0,
