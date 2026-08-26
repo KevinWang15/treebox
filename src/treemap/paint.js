@@ -97,6 +97,16 @@ function warnColorFallback(item, error) {
   console.warn("TreeBox could not resolve an item color", error);
 }
 
+function isOutsideCanvas(bounds, canvasElement) {
+  return (
+    canvasElement &&
+    (bounds.x1 <= 0 ||
+      bounds.y1 <= 0 ||
+      bounds.x0 >= canvasElement.width ||
+      bounds.y0 >= canvasElement.height)
+  );
+}
+
 /**
  * low-level api to actually draw to the canvas.
  * will be called multiple times during a transition
@@ -113,6 +123,10 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
       x1: item.x1,
       y1: item.y1,
     });
+
+    if (isOutsideCanvas(bounds, this.canvasElement)) {
+      continue;
+    }
 
     let itemColor;
     try {
@@ -142,7 +156,7 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
     const fontSizeCss = Math.min(
       Math.round((bounds.x1 - bounds.x0) / this.pixelRatio / 10),
       Math.round((bounds.y1 - bounds.y0) / this.pixelRatio / 3),
-      160
+      160,
     );
     const fontSize = fontSizeCss * this.pixelRatio;
 
@@ -160,7 +174,7 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
           item.y1 - item.y0,
           {
             color: itemColor,
-          }
+          },
         );
 
         if (hovering) {
@@ -171,7 +185,7 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
       }
 
       if (depth <= 2) {
-        this.canvasUtils.fillText(item.text, bounds, fontSize);
+        this.canvasUtils.fillText(item.text, bounds, fontSize, "white", item);
       }
     };
 
@@ -191,10 +205,16 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
           item.y1 - item.y0,
           {
             color: itemColor,
-          }
+          },
         );
         if (depth <= 2) {
-          this.canvasUtils.fillText(item.text, bounds, fontSize, "#FFFFFF");
+          this.canvasUtils.fillText(
+            item.text,
+            bounds,
+            fontSize,
+            "#FFFFFF",
+            item,
+          );
         }
         this.canvas2dContext.restore();
       } else {
@@ -207,7 +227,7 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
         item.x0,
         item.y0,
         item.x1 - item.x0,
-        item.y1 - item.y0
+        item.y1 - item.y0,
       );
       doPaintNode();
     }
@@ -217,10 +237,22 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
 function syncCanvasDimensions() {
   const width = this.domElement.clientWidth;
   const height = this.domElement.clientHeight;
-  this.canvasElement.width = Math.round(width * this.pixelRatio);
-  this.canvasElement.height = Math.round(height * this.pixelRatio);
-  this.canvasElement.style.width = width + "px";
-  this.canvasElement.style.height = height + "px";
+  const backingWidth = Math.round(width * this.pixelRatio);
+  const backingHeight = Math.round(height * this.pixelRatio);
+  if (this.canvasElement.width !== backingWidth) {
+    this.canvasElement.width = backingWidth;
+  }
+  if (this.canvasElement.height !== backingHeight) {
+    this.canvasElement.height = backingHeight;
+  }
+  const styleWidth = width + "px";
+  const styleHeight = height + "px";
+  if (this.canvasElement.style.width !== styleWidth) {
+    this.canvasElement.style.width = styleWidth;
+  }
+  if (this.canvasElement.style.height !== styleHeight) {
+    this.canvasElement.style.height = styleHeight;
+  }
   this.domElementRect = this.canvasElement.getBoundingClientRect();
 }
 
@@ -297,7 +329,7 @@ export function resize() {
     if (entry.viewport !== entry.node && !scaledViewports.has(entry.viewport)) {
       Object.assign(
         entry.viewport,
-        scaleViewport(entry.viewport, previousBounds, nextBounds)
+        scaleViewport(entry.viewport, previousBounds, nextBounds),
       );
       scaledViewports.add(entry.viewport);
     }
@@ -309,7 +341,7 @@ export function resize() {
   const currentEntry = this.viewportHistory[this.viewportHistory.length - 1];
   Object.assign(
     this.viewport,
-    viewportBounds(currentEntry ? currentEntry.viewport : nextBounds)
+    viewportBounds(currentEntry ? currentEntry.viewport : nextBounds),
   );
   if (this.lastHoveringItem) {
     this.emitEvent("hover", null);

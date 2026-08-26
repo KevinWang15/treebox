@@ -34,7 +34,7 @@ function paintAtRatio(pixelRatio) {
         y1: 60,
       },
     ],
-    { hovering: false, depth: 0 }
+    { hovering: false, depth: 0 },
   );
   return fillText.mock.calls[0][2];
 }
@@ -74,7 +74,7 @@ test("uses a static canvas color without replacing it with a fallback", () => {
         y1: 60,
       },
     ],
-    { hovering: false, depth: 0 }
+    { hovering: false, depth: 0 },
   );
 
   expect(fillRect).toHaveBeenCalledWith(0, 0, 100, 60, {
@@ -121,7 +121,7 @@ test("falls back once when a color callback returns no color", () => {
 
     expect(fillRect).toHaveBeenCalledTimes(2);
     expect(
-      fillRect.mock.calls.every((call) => call[4].color === fallbackGradient)
+      fillRect.mock.calls.every((call) => call[4].color === fallbackGradient),
     ).toBe(true);
     expect(warn).toHaveBeenCalledTimes(1);
   } finally {
@@ -175,7 +175,7 @@ test("falls back when Canvas rejects a configured color", () => {
           y1: 60,
         },
       ],
-      { hovering: false, depth: 0 }
+      { hovering: false, depth: 0 },
     );
 
     expect(fillRect).toHaveBeenCalledWith(0, 0, 100, 60, {
@@ -231,7 +231,7 @@ test("accepts native canvas paints without reparsing them", () => {
           y1: 60,
         },
       ],
-      { hovering: false, depth: 0 }
+      { hovering: false, depth: 0 },
     );
 
     expect(fillRect).toHaveBeenCalledWith(0, 0, 100, 60, { color: gradient });
@@ -275,4 +275,89 @@ test("restores the current hover layer after a full repaint", () => {
     [activeNode, { hovering: false, depth: -1 }],
     [lastHoveringItem, { hovering: true, depth: 0 }],
   ]);
+});
+
+test("skips all paint work for nodes outside the canvas", () => {
+  const color = jest.fn(() => "red");
+  const context = {
+    activeNode: {},
+    canvas2dContext: {},
+    canvasElement: { width: 100, height: 100 },
+    canvasUtils: {
+      clearRect: jest.fn(),
+      fillRect: jest.fn(),
+      fillText: jest.fn(),
+    },
+    pixelRatio: 1,
+    transitionTargetNode: null,
+    viewportUtils: { transform: (bounds) => bounds },
+  };
+  context.paintLayer = paintLayer.bind(context);
+
+  context.paintLayer(
+    [
+      {
+        text: "offscreen",
+        color,
+        children: [{ text: "child", children: null }],
+        x0: 101,
+        x1: 201,
+        y0: 0,
+        y1: 100,
+      },
+    ],
+    { hovering: false, depth: 0 },
+  );
+
+  expect(color).not.toHaveBeenCalled();
+  expect(context.canvasUtils.clearRect).not.toHaveBeenCalled();
+  expect(context.canvasUtils.fillRect).not.toHaveBeenCalled();
+  expect(context.canvasUtils.fillText).not.toHaveBeenCalled();
+});
+
+test("does not reset an unchanged canvas backing store during repaint", () => {
+  let width = 200;
+  let height = 100;
+  const setWidth = jest.fn((value) => {
+    width = value;
+  });
+  const setHeight = jest.fn((value) => {
+    height = value;
+  });
+  const canvasElement = {
+    get width() {
+      return width;
+    },
+    set width(value) {
+      setWidth(value);
+    },
+    get height() {
+      return height;
+    },
+    set height(value) {
+      setHeight(value);
+    },
+    getBoundingClientRect: () => ({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 50,
+    }),
+    style: { width: "100px", height: "50px" },
+  };
+  const context = {
+    activeNode: {},
+    canvasElement,
+    clearRectAndPaintLayer: jest.fn(),
+    destroyed: false,
+    domElement: { clientWidth: 100, clientHeight: 50 },
+    lastHoveringItem: null,
+    pixelRatio: 2,
+    rootNode: { x1: 100, y1: 50 },
+  };
+
+  repaint.call(context, { skipResize: true });
+
+  expect(setWidth).not.toHaveBeenCalled();
+  expect(setHeight).not.toHaveBeenCalled();
 });

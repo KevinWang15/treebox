@@ -1,6 +1,104 @@
 import { viewportTransform } from "./viewport";
 
-export function fillText(text, bounds, fontSize, fillStyle = "white") {
+function measureTextWidth(context, text) {
+  return context.measureText(text).width;
+}
+
+function createTextLayout(context, text, maxWidth, height, fontSize) {
+  const words = text.replace(/\r?\n/g, " \n ").split(" ");
+  let line = "";
+  const lines = [];
+
+  for (let n = 0; n < words.length; n++) {
+    let word = words[n];
+    if (word === "\n") {
+      lines.push(line.trim());
+      line = "";
+      continue;
+    }
+    const testLine = line + word + " ";
+    if (measureTextWidth(context, testLine) <= maxWidth) {
+      line = testLine;
+      continue;
+    }
+    if (line) {
+      lines.push(line.trim());
+      line = "";
+    }
+    while (word.length > 1 && measureTextWidth(context, word) > maxWidth) {
+      let splitAt = word.length - 1;
+      while (
+        splitAt > 1 &&
+        measureTextWidth(context, word.slice(0, splitAt)) > maxWidth
+      ) {
+        splitAt--;
+      }
+      lines.push(word.slice(0, splitAt));
+      word = word.slice(splitAt);
+    }
+    line = word + " ";
+  }
+  if (line || !lines.length) {
+    lines.push(line.trim());
+  }
+
+  const lineHeight = fontSize * 1.2;
+  const maxLines = Math.max(1, Math.floor(height / lineHeight));
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    let lastLine = lines[maxLines - 1];
+    while (lastLine && measureTextWidth(context, lastLine + "…") > maxWidth) {
+      lastLine = lastLine.slice(0, -1);
+    }
+    lines[maxLines - 1] = lastLine + "…";
+  }
+
+  return lines;
+}
+
+function getTextLayout(context, item, text, maxWidth, height, fontSize) {
+  if (!item || (typeof item !== "object" && typeof item !== "function")) {
+    return createTextLayout(
+      context.canvas2dContext,
+      text,
+      maxWidth,
+      height,
+      fontSize,
+    );
+  }
+
+  if (!context.textLayoutCache) {
+    context.textLayoutCache = new WeakMap();
+  }
+  const cached = context.textLayoutCache.get(item);
+  if (
+    cached &&
+    cached.text === text &&
+    cached.maxWidth === maxWidth &&
+    cached.height === height &&
+    cached.fontSize === fontSize
+  ) {
+    return cached.lines;
+  }
+
+  const layout = createTextLayout(
+    context.canvas2dContext,
+    text,
+    maxWidth,
+    height,
+    fontSize,
+  );
+  context.textLayoutCache.set(item, {
+    text,
+    maxWidth,
+    height,
+    fontSize,
+    lines: layout,
+  });
+  return layout;
+}
+
+export function fillText(text, bounds, fontSize, fillStyle = "white", item) {
   const margin = this.BOX_MARGIN * this.pixelRatio;
   const width = bounds.x1 - bounds.x0 - margin * 2;
   const height = bounds.y1 - bounds.y0 - margin * 2;
@@ -21,17 +119,14 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
     bounds.x0 + margin,
     bounds.y0 + margin,
     width,
-    height
+    height,
   );
   this.canvas2dContext.clip();
 
   this.canvas2dContext.font = fontSize + "px sans-serif";
   this.canvas2dContext.fillStyle = fillStyle;
   this.canvas2dContext.lineJoin = "round";
-  this.canvas2dContext.lineWidth = Math.max(
-    this.pixelRatio,
-    fontSize * 0.06
-  );
+  this.canvas2dContext.lineWidth = Math.max(this.pixelRatio, fontSize * 0.06);
   this.canvas2dContext.strokeStyle = "rgba(9, 14, 25, 0.84)";
   this.canvas2dContext.textAlign = "center";
   this.canvas2dContext.textBaseline = "middle";
@@ -41,60 +136,14 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
   const centerY = (bounds.y0 + bounds.y1) / 2;
   const lineHeight = fontSize * 1.2;
 
-  const words = String(text).replace(/\r?\n/g, " \n ").split(" ");
-  let line = "";
-  let lines = [];
-
-  for (let n = 0; n < words.length; n++) {
-    let word = words[n];
-    if (word === "\n") {
-      lines.push(line.trim());
-      line = "";
-      continue;
-    }
-    const testLine = line + word + " ";
-    if (this.canvas2dContext.measureText(testLine).width <= maxWidth) {
-      line = testLine;
-      continue;
-    }
-    if (line) {
-      lines.push(line.trim());
-      line = "";
-    }
-    while (
-      word.length > 1 &&
-      this.canvas2dContext.measureText(word).width > maxWidth
-    ) {
-      let splitAt = word.length - 1;
-      while (
-        splitAt > 1 &&
-        this.canvas2dContext.measureText(word.slice(0, splitAt)).width >
-          maxWidth
-      ) {
-        splitAt--;
-      }
-      lines.push(word.slice(0, splitAt));
-      word = word.slice(splitAt);
-    }
-    line = word + " ";
-  }
-  if (line || !lines.length) {
-    lines.push(line.trim());
-  }
-
-  const maxLines = Math.max(1, Math.floor(height / lineHeight));
-  if (lines.length > maxLines) {
-    lines.length = maxLines;
-    let lastLine = lines[maxLines - 1];
-    while (
-      lastLine &&
-      this.canvas2dContext.measureText(lastLine + "…").width > maxWidth
-    ) {
-      lastLine = lastLine.slice(0, -1);
-    }
-    lines[maxLines - 1] = lastLine + "…";
-  }
-
+  const lines = getTextLayout(
+    this,
+    item,
+    String(text),
+    maxWidth,
+    height,
+    fontSize,
+  );
   const totalHeight = lines.length * lineHeight;
   let startY = centerY - totalHeight / 2 + lineHeight / 2;
 
@@ -103,13 +152,13 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
       line,
       centerX,
       startY + index * lineHeight,
-      maxWidth
+      maxWidth,
     );
     this.canvas2dContext.fillText(
       line,
       centerX,
       startY + index * lineHeight,
-      maxWidth
+      maxWidth,
     );
   });
 
@@ -124,7 +173,7 @@ export function clearRect(x0, y0, w, h) {
     transformed.x0,
     transformed.y0,
     transformed.x1 - transformed.x0,
-    transformed.y1 - transformed.y0
+    transformed.y1 - transformed.y0,
   );
 }
 
@@ -133,7 +182,7 @@ export function clearAll() {
     0,
     0,
     this.canvasElement.width,
-    this.canvasElement.height
+    this.canvasElement.height,
   );
 }
 
@@ -153,6 +202,6 @@ export function fillRect(x0, y0, w, h, { color }) {
     transformed.x0 + margin,
     transformed.y0 + margin,
     transformedWidth,
-    transformedHeight
+    transformedHeight,
   );
 }

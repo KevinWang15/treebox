@@ -21,7 +21,7 @@ test("wraps an unbroken label within the available bounds", () => {
     context,
     "abcdefghijklmnopqrstuv",
     { x0: 0, x1: 100, y0: 0, y1: 100 },
-    20
+    20,
   );
 
   expect(canvas2dContext.fillText.mock.calls).toEqual([
@@ -47,7 +47,7 @@ test("ellipsizes wrapped text that exceeds the available height", () => {
     { BOX_MARGIN: 1, canvas2dContext, pixelRatio: 1 },
     "abcdefghijklmnopqrstuv",
     { x0: 0, x1: 100, y0: 0, y1: 40 },
-    20
+    20,
   );
 
   expect(canvas2dContext.fillText).toHaveBeenCalledTimes(1);
@@ -55,7 +55,7 @@ test("ellipsizes wrapped text that exceeds the available height", () => {
     "abcdefgh…",
     50,
     20,
-    98
+    98,
   );
 });
 
@@ -75,7 +75,7 @@ test("preserves explicit line breaks", () => {
     { BOX_MARGIN: 1, canvas2dContext, pixelRatio: 1 },
     "Revenue\r\nFY 2026",
     { x0: 0, x1: 100, y0: 0, y1: 100 },
-    20
+    20,
   );
 
   expect(canvas2dContext.fillText.mock.calls).toEqual([
@@ -109,22 +109,17 @@ test("keeps box and text margins constant at high pixel ratios", () => {
 
   expect(canvas2dContext.fillRect).toHaveBeenCalledWith(2, 2, 196, 196);
   expect(canvas2dContext.rect).toHaveBeenCalledWith(2, 2, 196, 196);
-  expect(canvas2dContext.fillText).toHaveBeenCalledWith(
-    "label",
-    100,
-    100,
-    196
-  );
+  expect(canvas2dContext.fillText).toHaveBeenCalledWith("label", 100, 100, 196);
   expect(canvas2dContext.strokeText).toHaveBeenCalledWith(
     "label",
     100,
     100,
-    196
+    196,
   );
   expect(canvas2dContext.lineWidth).toBe(2);
   expect(canvas2dContext.strokeStyle).toBe("rgba(9, 14, 25, 0.84)");
   expect(canvas2dContext.strokeText.mock.invocationCallOrder[0]).toBeLessThan(
-    canvas2dContext.fillText.mock.invocationCallOrder[0]
+    canvas2dContext.fillText.mock.invocationCallOrder[0],
   );
 });
 
@@ -144,9 +139,43 @@ test("uses a CSS-pixel minimum for high-resolution text", () => {
     { BOX_MARGIN: 1, canvas2dContext, pixelRatio: 2 },
     "too small",
     { x0: 0, x1: 100, y0: 0, y1: 100 },
-    10
+    10,
   );
 
   expect(canvas2dContext.save).not.toHaveBeenCalled();
   expect(canvas2dContext.fillText).not.toHaveBeenCalled();
+});
+
+test("reuses measured label layouts until their geometry changes", () => {
+  const canvas2dContext = {
+    beginPath: jest.fn(),
+    clip: jest.fn(),
+    fillText: jest.fn(),
+    measureText: jest.fn((text) => ({ width: text.length * 10 })),
+    rect: jest.fn(),
+    restore: jest.fn(),
+    save: jest.fn(),
+    strokeText: jest.fn(),
+  };
+  const context = {
+    BOX_MARGIN: 1,
+    canvas2dContext,
+    pixelRatio: 1,
+  };
+  const item = {};
+  const bounds = { x0: 0, x1: 100, y0: 0, y1: 100 };
+
+  fillText.call(context, "a measured label", bounds, 20, "white", item);
+  const firstMeasurementCount = canvas2dContext.measureText.mock.calls.length;
+  fillText.call(context, "a measured label", bounds, 20, "white", item);
+
+  expect(firstMeasurementCount).toBeGreaterThan(0);
+  expect(canvas2dContext.measureText).toHaveBeenCalledTimes(
+    firstMeasurementCount,
+  );
+
+  fillText.call(context, "a changed label", bounds, 20, "white", item);
+  expect(canvas2dContext.measureText.mock.calls.length).toBeGreaterThan(
+    firstMeasurementCount,
+  );
 });
