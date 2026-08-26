@@ -12,8 +12,9 @@ Treebox is an interactive TreeMap visualization
 - smooth transition
 - uses canvas & requestAnimationFrame for performance
 - customize text / color / weight
+- wraps long labels within their available bounds
 - fires events (so you can implement tooltip, etc.)
-- no runtime dependencies (under 8kb gzipped)
+- no runtime dependencies (about 8kb gzipped)
 - MIT license
 
 # DEMO

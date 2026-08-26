@@ -39,24 +39,60 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
   let lines = [];
 
   for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + " ";
-    const metrics = this.canvas2dContext.measureText(testLine);
-    const testWidth = metrics.width;
-
-    if (testWidth > maxWidth && n > 0) {
-      lines.push(line.trim());
-      line = words[n] + " ";
-    } else {
+    let word = words[n];
+    const testLine = line + word + " ";
+    if (this.canvas2dContext.measureText(testLine).width <= maxWidth) {
       line = testLine;
+      continue;
     }
+    if (line) {
+      lines.push(line.trim());
+      line = "";
+    }
+    while (
+      word.length > 1 &&
+      this.canvas2dContext.measureText(word).width > maxWidth
+    ) {
+      let splitAt = word.length - 1;
+      while (
+        splitAt > 1 &&
+        this.canvas2dContext.measureText(word.slice(0, splitAt)).width >
+          maxWidth
+      ) {
+        splitAt--;
+      }
+      lines.push(word.slice(0, splitAt));
+      word = word.slice(splitAt);
+    }
+    line = word + " ";
   }
-  lines.push(line.trim());
+  if (line || !lines.length) {
+    lines.push(line.trim());
+  }
+
+  const maxLines = Math.max(1, Math.floor(height / lineHeight));
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    let lastLine = lines[maxLines - 1];
+    while (
+      lastLine &&
+      this.canvas2dContext.measureText(lastLine + "…").width > maxWidth
+    ) {
+      lastLine = lastLine.slice(0, -1);
+    }
+    lines[maxLines - 1] = lastLine + "…";
+  }
 
   const totalHeight = lines.length * lineHeight;
   let startY = centerY - totalHeight / 2 + lineHeight / 2;
 
   lines.forEach((line, index) => {
-    this.canvas2dContext.fillText(line, centerX, startY + index * lineHeight);
+    this.canvas2dContext.fillText(
+      line,
+      centerX,
+      startY + index * lineHeight,
+      maxWidth
+    );
   });
 
   this.canvas2dContext.restore();
