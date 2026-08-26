@@ -165,11 +165,22 @@ export function onClickEventListener(e) {
 }
 
 export function onMouseDownEventListener(e) {
-  if (
-    e.button !== 0 ||
-    e.isPrimary === false ||
-    this.viewportTransitionInProgress
-  ) {
+  if (e.isPrimary === false) {
+    if (
+      e.pointerType === "touch" &&
+      this.isMouseDown &&
+      this.activePointerType === "touch"
+    ) {
+      onPointerCancelEventListener.call(this, {
+        pointerId: this.activePointerId,
+      });
+      // A multi-touch gesture must not finish as a click or area selection.
+      this.selectionAreaWasTriggered = true;
+    }
+    return;
+  }
+
+  if (e.button !== 0 || this.viewportTransitionInProgress) {
     return;
   }
 
