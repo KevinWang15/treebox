@@ -50,7 +50,7 @@ export function transitionTo(viewport) {
       this.resizePending = false;
       this.resize();
     }
-    schedulePendingZoomOut.call(this);
+    schedulePendingNavigation.call(this);
   });
 }
 
@@ -98,9 +98,7 @@ export function zoomIn(targetNode) {
 
 export function zoomOut() {
   if (this.viewportTransitionInProgress) {
-    return new Promise((resolve) => {
-      this.pendingZoomOutResolvers.push(resolve);
-    });
+    return queueNavigation.call(this, "out");
   }
   if (!this.viewportHistory.length) {
     return Promise.resolve(false);
@@ -134,7 +132,7 @@ export function zoomOut() {
 
 export function undoZoomOut() {
   if (this.viewportTransitionInProgress) {
-    return Promise.resolve(false);
+    return queueNavigation.call(this, "redo");
   }
   if (!this.viewportHistoryUndoStack.length) {
     return Promise.resolve(false);
@@ -175,27 +173,35 @@ function repaintHoveredItem() {
   });
 }
 
-function schedulePendingZoomOut() {
+function queueNavigation(direction) {
+  return new Promise((resolve, reject) => {
+    this.pendingNavigationQueue.push({ direction, reject, resolve });
+  });
+}
+
+function settlePendingNavigationQueue(result) {
+  this.pendingNavigationQueue
+    .splice(0)
+    .forEach(({ resolve }) => resolve(result));
+}
+
+function schedulePendingNavigation() {
   if (
-    !this.pendingZoomOutResolvers.length ||
-    this.pendingZoomOutScheduled ||
+    !this.pendingNavigationQueue.length ||
+    this.pendingNavigationScheduled ||
     this.destroyed
   ) {
-    if (this.destroyed && this.pendingZoomOutResolvers.length) {
-      this.pendingZoomOutResolvers
-        .splice(0)
-        .forEach((resolve) => resolve(false));
+    if (this.destroyed && this.pendingNavigationQueue.length) {
+      settlePendingNavigationQueue.call(this, false);
     }
     return;
   }
 
-  this.pendingZoomOutScheduled = true;
+  this.pendingNavigationScheduled = true;
   setTimeout(() => {
-    this.pendingZoomOutScheduled = false;
+    this.pendingNavigationScheduled = false;
     if (this.destroyed) {
-      this.pendingZoomOutResolvers
-        .splice(0)
-        .forEach((resolve) => resolve(false));
+      settlePendingNavigationQueue.call(this, false);
       return;
     }
     if (this.viewportTransitionInProgress) {
@@ -204,12 +210,13 @@ function schedulePendingZoomOut() {
       return;
     }
 
-    const resolve = this.pendingZoomOutResolvers.shift();
-    this.zoomOut().then((result) => {
-      resolve(result);
-      // A request at the root resolves immediately and therefore has no
-      // transition finalizer to schedule the next queued request.
-      schedulePendingZoomOut.call(this);
+    const pending = this.pendingNavigationQueue.shift();
+    const navigation =
+      pending.direction === "out" ? this.zoomOut() : this.undoZoomOut();
+    navigation.then(pending.resolve, pending.reject).finally(() => {
+      // A request with no available history resolves immediately and therefore
+      // has no transition finalizer to schedule the next queued request.
+      schedulePendingNavigation.call(this);
     });
   });
 }

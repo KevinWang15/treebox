@@ -1,4 +1,10 @@
-import { emitZoomEvent, transitionTo, zoomIn, zoomOut } from "./transition";
+import {
+  emitZoomEvent,
+  transitionTo,
+  undoZoomOut,
+  zoomIn,
+  zoomOut,
+} from "./transition";
 
 test("honors a zoom-out requested during a zoom-in transition", async () => {
   const animationFrames = [];
@@ -34,8 +40,8 @@ test("honors a zoom-out requested during a zoom-in transition", async () => {
     viewportHistoryUndoStack: [],
     viewportTransitionInProgress: false,
     transitionTargetNode: null,
-    pendingZoomOutScheduled: false,
-    pendingZoomOutResolvers: [],
+    pendingNavigationScheduled: false,
+    pendingNavigationQueue: [],
     resizePending: false,
     destroyed: false,
     canvasUtils: { clearAll: jest.fn() },
@@ -148,8 +154,8 @@ test("preserves every zoom-out requested during a transition", async () => {
     viewportHistoryUndoStack: [],
     viewportTransitionInProgress: false,
     transitionTargetNode: null,
-    pendingZoomOutScheduled: false,
-    pendingZoomOutResolvers: [],
+    pendingNavigationScheduled: false,
+    pendingNavigationQueue: [],
     resizePending: false,
     destroyed: false,
     canvasUtils: { clearAll: jest.fn() },
@@ -179,6 +185,79 @@ test("preserves every zoom-out requested during a transition", async () => {
   expect(
     context.emitEvent.mock.calls.map(([, payload]) => payload.depth)
   ).toEqual([2, 1, 0]);
+
+  global.requestAnimationFrame = originalAnimationFrame;
+  window.matchMedia = originalMatchMedia;
+});
+
+test("preserves a redo that reverses an animated zoom-out", async () => {
+  const animationFrames = [];
+  const originalAnimationFrame = global.requestAnimationFrame;
+  const originalMatchMedia = window.matchMedia;
+  global.requestAnimationFrame = (callback) => {
+    animationFrames.push(callback);
+    return animationFrames.length;
+  };
+  window.matchMedia = () => ({ matches: true });
+
+  const root = {
+    children: [],
+    x0: 0,
+    x1: 100,
+    y0: 0,
+    y1: 100,
+  };
+  const target = {
+    text: "target",
+    children: [{}],
+    x0: 20,
+    x1: 80,
+    y0: 20,
+    y1: 80,
+  };
+  root.children.push(target);
+  const context = {
+    activeNode: target,
+    rootNode: root,
+    viewport: { x0: 20, x1: 80, y0: 20, y1: 80 },
+    viewportHistory: [{ node: target, viewport: target }],
+    viewportHistoryUndoStack: [],
+    viewportTransitionInProgress: false,
+    transitionTargetNode: null,
+    pendingNavigationScheduled: false,
+    pendingNavigationQueue: [],
+    resizePending: false,
+    destroyed: false,
+    canvasUtils: { clearAll: jest.fn() },
+    paintLayer: jest.fn(),
+    repaint: jest.fn(),
+    emitEvent: jest.fn(),
+  };
+  context.transitionTo = transitionTo.bind(context);
+  context.emitZoomEvent = emitZoomEvent.bind(context);
+  context.zoomOut = zoomOut.bind(context);
+  context.undoZoomOut = undoZoomOut.bind(context);
+
+  const zoomingOut = context.zoomOut();
+  const reversing = context.undoZoomOut();
+  animationFrames.shift()();
+  await zoomingOut;
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  animationFrames.shift()();
+
+  await expect(reversing).resolves.toBe(true);
+  expect(context.activeNode).toBe(target);
+  expect(context.viewportHistory).toHaveLength(1);
+  expect(context.viewportHistoryUndoStack).toHaveLength(0);
+  expect(
+    context.emitEvent.mock.calls.map(([, payload]) => [
+      payload.direction,
+      payload.depth,
+    ])
+  ).toEqual([
+    ["out", 0],
+    ["redo", 1],
+  ]);
 
   global.requestAnimationFrame = originalAnimationFrame;
   window.matchMedia = originalMatchMedia;
