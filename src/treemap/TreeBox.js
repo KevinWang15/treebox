@@ -21,6 +21,10 @@ import {
 import { clearRectAndPaintLayer, paintLayer, repaint, resize } from "./paint";
 import throttle from "./throttle";
 
+function normalizePixelRatio(pixelRatio) {
+  return Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
+}
+
 export default class TreeBox {
   // members
   pixelRatio = 1;
@@ -112,8 +116,7 @@ export default class TreeBox {
       throw new TypeError("TreeBox data must be an array");
     }
 
-    this.pixelRatio =
-      Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
+    this.pixelRatio = normalizePixelRatio(pixelRatio);
     this.eventHandler = eventHandler;
     this.domElement = domElement;
     this.canvasElement = this.createCanvasElement(domElement);
@@ -177,6 +180,22 @@ export default class TreeBox {
     this.canvas2dContext = null;
     this.viewportHistory = null;
     this.viewport = null;
+  }
+
+  setPixelRatio(pixelRatio) {
+    if (this.destroyed) {
+      return false;
+    }
+
+    const nextPixelRatio = normalizePixelRatio(pixelRatio);
+    if (nextPixelRatio === this.pixelRatio) {
+      return false;
+    }
+
+    this.pixelRatio = nextPixelRatio;
+    this.canvasElement.style.zoom = 1 / nextPixelRatio;
+    this.repaint();
+    return true;
   }
 
   onMouseMoveEventListener = (e) => {

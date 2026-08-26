@@ -158,3 +158,33 @@ test("defers painting a zero-size chart until its container becomes visible", ()
   treebox.destroy();
   host.remove();
 });
+
+test("updates the canvas backing store when the display pixel ratio changes", () => {
+  const width = 320;
+  const height = 180;
+  const host = document.createElement("div");
+  Object.defineProperties(host, {
+    clientWidth: { configurable: true, value: width },
+    clientHeight: { configurable: true, value: height },
+    getBoundingClientRect: {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width, height }),
+    },
+  });
+  document.body.appendChild(host);
+  const treebox = new TreeBox({
+    data: [{ text: "item", weight: 1, children: null }],
+    domElement: host,
+  });
+
+  expect(treebox.setPixelRatio(2)).toBe(true);
+  expect(treebox.pixelRatio).toBe(2);
+  expect(Number(treebox.canvasElement.style.zoom)).toBe(0.5);
+  expect(treebox.canvasElement).toMatchObject({ width: 640, height: 360 });
+  expect(treebox.rootNode).toMatchObject({ x1: width, y1: height });
+  expect(treebox.setPixelRatio(2)).toBe(false);
+
+  treebox.destroy();
+  expect(treebox.setPixelRatio(1)).toBe(false);
+  host.remove();
+});

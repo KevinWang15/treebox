@@ -12,6 +12,7 @@ class App extends React.Component {
 
   chartElement = null;
   treebox = null;
+  pixelRatioMediaQuery = null;
 
   componentDidMount() {
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -24,10 +25,12 @@ class App extends React.Component {
     });
     window.treebox = this.treebox;
     window.addEventListener("resize", this.handleResize);
+    this.watchPixelRatio();
   }
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.handleResize);
+    this.unwatchPixelRatio();
     if (this.treebox) {
       this.treebox.destroy();
     }
@@ -52,8 +55,50 @@ class App extends React.Component {
 
   handleResize = () => {
     if (this.treebox) {
-      this.treebox.repaint();
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      if (!this.treebox.setPixelRatio(pixelRatio)) {
+        this.treebox.repaint();
+      }
     }
+  };
+
+  handlePixelRatioChange = () => {
+    this.handleResize();
+    this.watchPixelRatio();
+  };
+
+  watchPixelRatio = () => {
+    this.unwatchPixelRatio();
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    this.pixelRatioMediaQuery = window.matchMedia(
+      `(resolution: ${window.devicePixelRatio || 1}dppx)`
+    );
+    if (typeof this.pixelRatioMediaQuery.addEventListener === "function") {
+      this.pixelRatioMediaQuery.addEventListener(
+        "change",
+        this.handlePixelRatioChange
+      );
+    } else if (typeof this.pixelRatioMediaQuery.addListener === "function") {
+      this.pixelRatioMediaQuery.addListener(this.handlePixelRatioChange);
+    }
+  };
+
+  unwatchPixelRatio = () => {
+    if (!this.pixelRatioMediaQuery) {
+      return;
+    }
+    if (typeof this.pixelRatioMediaQuery.removeEventListener === "function") {
+      this.pixelRatioMediaQuery.removeEventListener(
+        "change",
+        this.handlePixelRatioChange
+      );
+    } else if (typeof this.pixelRatioMediaQuery.removeListener === "function") {
+      this.pixelRatioMediaQuery.removeListener(this.handlePixelRatioChange);
+    }
+    this.pixelRatioMediaQuery = null;
   };
 
   handleZoomOut = () => {

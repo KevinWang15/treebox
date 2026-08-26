@@ -69,6 +69,9 @@ const treebox = new TreeBox({
 // Hover events receive the active item, then null when hover/focus leaves.
 // Zoom events include { node, direction, depth, canZoomOut }.
 
+// Keep the backing store sharp after browser zoom or a display change.
+treebox.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
 function destroyTreebox() {
   treebox.destroy();
 }
