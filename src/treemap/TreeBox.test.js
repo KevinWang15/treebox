@@ -344,6 +344,21 @@ test("rejects cyclic data before adding canvas elements", () => {
   host.remove();
 });
 
+test("rejects reused item objects before adding canvas elements", () => {
+  const shared = { text: "shared", weight: 1, children: null };
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const bodyChildCount = document.body.childElementCount;
+
+  expect(
+    () => new TreeBox({ data: [shared, shared], domElement: host })
+  ).toThrow("Treemap data must not reuse item objects");
+  expect(host.querySelector("canvas")).toBeNull();
+  expect(document.body.childElementCount).toBe(bodyChildCount);
+
+  host.remove();
+});
+
 test("cleans up DOM elements when layout fails after construction starts", () => {
   const item = Object.freeze({
     text: "frozen",

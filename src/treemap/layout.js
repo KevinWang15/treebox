@@ -1,4 +1,8 @@
-export function validateHierarchy(data, ancestors = new Set()) {
+export function validateHierarchy(
+  data,
+  ancestors = new Set(),
+  seenItems = new Set()
+) {
   if (!Array.isArray(data)) {
     throw new TypeError("Treemap layer data must be an array");
   }
@@ -12,9 +16,13 @@ export function validateHierarchy(data, ancestors = new Set()) {
       if (!item || typeof item !== "object") {
         throw new TypeError("Treemap items must be objects");
       }
-      if (item.children) {
-        validateHierarchy(item.children, ancestors);
+      if (seenItems.has(item)) {
+        throw new TypeError("Treemap data must not reuse item objects");
       }
+      if (item.children) {
+        validateHierarchy(item.children, ancestors, seenItems);
+      }
+      seenItems.add(item);
     }
   } finally {
     ancestors.delete(data);
@@ -139,8 +147,7 @@ function calcWeightShare(group, data) {
 
   const scale = calcMaxWeight(data);
   return (
-    calcScaledTotalWeight(group, scale) /
-    calcScaledTotalWeight(data, scale)
+    calcScaledTotalWeight(group, scale) / calcScaledTotalWeight(data, scale)
   );
 }
 
