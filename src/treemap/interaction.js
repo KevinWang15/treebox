@@ -146,6 +146,9 @@ export function onClickEventListener(e) {
     this.selectionAreaWasTriggered = false;
     return;
   }
+  if (e.detail > 1) {
+    return;
+  }
   if (this.viewportTransitionInProgress) {
     return;
   }
@@ -231,8 +234,23 @@ export function onMouseUpEventListener(e) {
     !selectionAreaWasTriggered &&
     !this.viewportTransitionInProgress
   ) {
-    const target = findItemAtPosition.call(this, this.eventToCanvasPoint(e));
+    const point = this.eventToCanvasPoint(e);
+    const target = findItemAtPosition.call(this, point);
     if (target && target.children && target.children.length) {
+      const eventTime = e.timeStamp;
+      const previousTouch = this.lastTouchActivation;
+      const repeatedTouch =
+        previousTouch &&
+        eventTime - previousTouch[0] <= 300 &&
+        Math.abs(point.x - previousTouch[1]) +
+          Math.abs(point.y - previousTouch[2]) <=
+          32;
+      this.lastTouchActivation = [eventTime, point.x, point.y];
+      if (repeatedTouch) {
+        // Consume the synthetic click that follows this ignored second tap.
+        this.selectionAreaWasTriggered = true;
+        return;
+      }
       this.zoomIn(target);
     }
   }

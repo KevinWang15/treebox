@@ -1,5 +1,6 @@
 import {
   findDirectionalItem,
+  onClickEventListener,
   onKeyDownEventListener,
   onMouseLeaveEventListener,
   onMouseUpEventListener,
@@ -10,6 +11,21 @@ import {
 function createWheelEvent(deltaY, timeStamp = 0, deltaMode = 0) {
   return { deltaMode, deltaY, preventDefault: jest.fn(), timeStamp };
 }
+
+test("ignores repeated clicks so a double-click cannot skip a level", () => {
+  const context = {
+    selectionAreaWasTriggered: false,
+    viewportTransitionInProgress: false,
+    transitionTargetNode: null,
+    eventToCanvasPoint: jest.fn(),
+    zoomIn: jest.fn(),
+  };
+
+  onClickEventListener.call(context, { detail: 2 });
+
+  expect(context.eventToCanvasPoint).not.toHaveBeenCalled();
+  expect(context.zoomIn).not.toHaveBeenCalled();
+});
 
 test("allows normal page scrolling when there is no zoom history", () => {
   const context = {
@@ -177,6 +193,37 @@ test("emits navigation state after selection zoom", async () => {
   expect(context.viewportHistoryUndoStack).toHaveLength(0);
   expect(context.repaint).toHaveBeenCalledTimes(1);
   expect(context.emitZoomEvent).toHaveBeenCalledWith("select");
+});
+
+test("ignores a repeated touch activation at the same position", () => {
+  const target = {
+    children: [{}],
+    x0: 0,
+    x1: 20,
+    y0: 0,
+    y1: 20,
+  };
+  const context = {
+    isMouseDown: true,
+    activeNode: { children: [target] },
+    activePointerId: undefined,
+    activePointerType: "touch",
+    lastMouseDownPos: { x: 10, y: 10 },
+    selectionAreaElement: { style: { display: "none" } },
+    selectionAreaWasTriggered: false,
+    selectionAreaViewPort: null,
+    viewportTransitionInProgress: false,
+    viewportUtils: { reverseTransform: (point) => point },
+    eventToCanvasPoint: jest.fn(() => ({ x: 10, y: 10 })),
+    lastTouchActivation: [100, 10, 10],
+    zoomIn: jest.fn(),
+  };
+
+  onMouseUpEventListener.call(context, { timeStamp: 200 });
+
+  expect(context.zoomIn).not.toHaveBeenCalled();
+  expect(context.selectionAreaWasTriggered).toBe(true);
+  expect(context.lastTouchActivation).toEqual([200, 10, 10]);
 });
 
 test("discards a selection if another transition has started", () => {
