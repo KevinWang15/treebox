@@ -107,7 +107,7 @@ export default class TreeBox {
     reverseTransform: reverseViewportTransform.bind(this),
   };
 
-  // pixels between boxes
+  // CSS pixels between boxes
   BOX_MARGIN = 1;
 
   // how many pixels moved before drawing a selection area

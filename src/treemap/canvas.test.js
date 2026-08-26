@@ -112,3 +112,25 @@ test("keeps box and text margins constant at high pixel ratios", () => {
     196
   );
 });
+
+test("uses a CSS-pixel minimum for high-resolution text", () => {
+  const canvas2dContext = {
+    beginPath: jest.fn(),
+    clip: jest.fn(),
+    fillText: jest.fn(),
+    measureText: jest.fn(),
+    rect: jest.fn(),
+    restore: jest.fn(),
+    save: jest.fn(),
+  };
+
+  fillText.call(
+    { BOX_MARGIN: 1, canvas2dContext, pixelRatio: 2 },
+    "too small",
+    { x0: 0, x1: 100, y0: 0, y1: 100 },
+    10
+  );
+
+  expect(canvas2dContext.save).not.toHaveBeenCalled();
+  expect(canvas2dContext.fillText).not.toHaveBeenCalled();
+});

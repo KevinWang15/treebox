@@ -10,7 +10,7 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
     String(text).length === 0 ||
     width <= 0 ||
     height <= 0 ||
-    fontSize < 6
+    fontSize < 6 * this.pixelRatio
   ) {
     return;
   }

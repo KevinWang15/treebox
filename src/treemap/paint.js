@@ -78,11 +78,12 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
       });
     }
 
-    let fontSize = Math.min(
-      Math.round((bounds.x1 - bounds.x0) / 10),
-      Math.round((bounds.y1 - bounds.y0) / 3),
+    const fontSizeCss = Math.min(
+      Math.round((bounds.x1 - bounds.x0) / this.pixelRatio / 10),
+      Math.round((bounds.y1 - bounds.y0) / this.pixelRatio / 3),
       160
     );
+    const fontSize = fontSizeCss * this.pixelRatio;
 
     const doPaintNode = () => {
       try {
