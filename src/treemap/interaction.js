@@ -1,4 +1,4 @@
-import { normalizeViewport } from "./viewport";
+import { isUsableViewport, normalizeViewport } from "./viewport";
 
 function limitTo(value, min, max) {
   if (value < min) {
@@ -36,7 +36,7 @@ export function onMouseMove({ x, y }) {
       // ignore small selections
       this.selectionAreaViewPort = null;
     } else {
-      this.selectionAreaViewPort = this.viewportUtils.reverseTransform(
+      const selectionViewport = this.viewportUtils.reverseTransform(
         normalizeViewport({
           x0,
           y0,
@@ -44,6 +44,9 @@ export function onMouseMove({ x, y }) {
           y1,
         })
       );
+      this.selectionAreaViewPort = isUsableViewport(selectionViewport)
+        ? selectionViewport
+        : null;
     }
   }
 }

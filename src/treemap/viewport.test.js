@@ -1,4 +1,16 @@
-import { reverseViewportTransform, viewportTransform } from "./viewport";
+import {
+  isUsableViewport,
+  reverseViewportTransform,
+  viewportTransform,
+} from "./viewport";
+
+test("requires finite, non-zero viewport spans", () => {
+  expect(isUsableViewport({ x0: 0, x1: 1, y0: 0, y1: 1 })).toBe(true);
+  expect(isUsableViewport(null)).toBe(false);
+  expect(isUsableViewport({ x0: 1, x1: 1, y0: 0, y1: 1 })).toBe(false);
+  expect(isUsableViewport({ x0: 0, x1: 1, y0: 2, y1: 1 })).toBe(false);
+  expect(isUsableViewport({ x0: 0, x1: Infinity, y0: 0, y1: 1 })).toBe(false);
+});
 
 test("forward transforms coordinates into the canvas backing store", () => {
   const context = {

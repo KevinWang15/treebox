@@ -6,6 +6,41 @@ import {
   zoomOut,
 } from "./transition";
 
+test("rejects degenerate zoom targets before changing navigation state", async () => {
+  const target = {
+    children: [{}],
+    x0: 10,
+    x1: 10,
+    y0: 20,
+    y1: 80,
+  };
+  const context = {
+    destroyed: false,
+    transitionTargetNode: null,
+    transitionTo: jest.fn(),
+    viewportHistory: [],
+    viewportHistoryUndoStack: [],
+    viewportTransitionInProgress: false,
+  };
+
+  await expect(zoomIn.call(context, target)).resolves.toBe(false);
+  expect(context.transitionTo).not.toHaveBeenCalled();
+  expect(context.transitionTargetNode).toBeNull();
+  expect(context.viewportHistory).toHaveLength(0);
+});
+
+test("ignores direct transitions to degenerate viewports", async () => {
+  const context = {
+    destroyed: false,
+    viewportTransitionInProgress: false,
+  };
+
+  await expect(
+    transitionTo.call(context, { x0: 10, x1: 10, y0: 20, y1: 80 })
+  ).resolves.toBe(false);
+  expect(context.viewportTransitionInProgress).toBe(false);
+});
+
 test("honors a zoom-out requested during a zoom-in transition", async () => {
   const animationFrames = [];
   const originalAnimationFrame = global.requestAnimationFrame;

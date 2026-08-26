@@ -19,6 +19,17 @@ export function calcTransitioningViewport(
   };
 }
 
+export function isUsableViewport(viewport) {
+  return Boolean(
+    viewport &&
+    [viewport.x0, viewport.x1, viewport.y0, viewport.y1].every(
+      Number.isFinite
+    ) &&
+    viewport.x1 > viewport.x0 &&
+    viewport.y1 > viewport.y0
+  );
+}
+
 export function viewportTransform({ x0, y0, x1, y1 }) {
   const vpw = this.viewport.x1 - this.viewport.x0;
   const vph = this.viewport.y1 - this.viewport.y0;

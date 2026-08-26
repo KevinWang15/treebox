@@ -1,7 +1,10 @@
-import { calcTransitioningViewport } from "./viewport";
+import { calcTransitioningViewport, isUsableViewport } from "./viewport";
 
 export function transitionTo(viewport) {
   if (this.destroyed) {
+    return Promise.resolve(false);
+  }
+  if (!isUsableViewport(viewport)) {
     return Promise.resolve(false);
   }
   if (this.viewportTransitionInProgress) {
@@ -72,6 +75,7 @@ export function zoomIn(targetNode) {
     !targetNode ||
     !targetNode.children ||
     !targetNode.children.length ||
+    !isUsableViewport(targetNode) ||
     this.viewportTransitionInProgress
   ) {
     return Promise.resolve(false);
