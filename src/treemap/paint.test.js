@@ -129,6 +129,64 @@ test("falls back once when a color callback returns no color", () => {
   }
 });
 
+test("falls back when Canvas rejects a configured color", () => {
+  const fallbackGradient = { addColorStop: jest.fn() };
+  const fillRect = jest.fn();
+  const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+  let fillStyle = "#000000";
+  const canvas2dContext = {
+    createLinearGradient: jest.fn(() => fallbackGradient),
+  };
+  Object.defineProperty(canvas2dContext, "fillStyle", {
+    configurable: true,
+    get: () => fillStyle,
+    set: (color) => {
+      if (["#000000", "#ffffff"].includes(color)) {
+        fillStyle = color;
+      }
+    },
+  });
+  const context = {
+    activeNode: {},
+    canvas2dContext,
+    canvasUtils: {
+      clearRect: jest.fn(),
+      fillRect,
+      fillText: jest.fn(),
+    },
+    pixelRatio: 1,
+    transitionTargetNode: null,
+    viewportUtils: {
+      transform: (bounds) => bounds,
+    },
+  };
+  context.paintLayer = paintLayer.bind(context);
+
+  try {
+    context.paintLayer(
+      [
+        {
+          text: "invalid color",
+          color: "not-a-color",
+          children: null,
+          x0: 0,
+          x1: 100,
+          y0: 0,
+          y1: 60,
+        },
+      ],
+      { hovering: false, depth: 0 }
+    );
+
+    expect(fillRect).toHaveBeenCalledWith(0, 0, 100, 60, {
+      color: fallbackGradient,
+    });
+    expect(warn).toHaveBeenCalledTimes(1);
+  } finally {
+    warn.mockRestore();
+  }
+});
+
 test("restores the current hover layer after a full repaint", () => {
   const activeNode = { text: "root" };
   const lastHoveringItem = { text: "hovered" };
