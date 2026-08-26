@@ -7,6 +7,7 @@ import {
   onMouseDownEventListener,
   onMouseUpEventListener,
   onMouseWheelEventListener,
+  onWindowBlurEventListener,
   updateHoveredItem,
 } from "./interaction";
 
@@ -207,6 +208,33 @@ test("ignores capture loss after the pointer interaction has settled", () => {
   onLostPointerCaptureEventListener.call(context, { pointerId: 7 });
 
   expect(context.selectionAreaWasTriggered).toBe(false);
+});
+
+test("cancels an active selection when the window loses focus", () => {
+  const context = {
+    isMouseDown: true,
+    activePointerId: 7,
+    activePointerType: "mouse",
+    lastMouseDownPos: { x: 10, y: 10 },
+    selectionAreaViewPort: { x0: 10, x1: 90, y0: 10, y1: 90 },
+    selectionAreaWasTriggered: true,
+    selectionAreaElement: { style: { display: "block" } },
+    canvasElement: {
+      hasPointerCapture: jest.fn(() => true),
+      releasePointerCapture: jest.fn(),
+    },
+  };
+
+  onWindowBlurEventListener.call(context);
+
+  expect(context.isMouseDown).toBe(false);
+  expect(context.activePointerId).toBeUndefined();
+  expect(context.activePointerType).toBeUndefined();
+  expect(context.lastMouseDownPos).toBeNull();
+  expect(context.selectionAreaViewPort).toBeNull();
+  expect(context.selectionAreaElement.style.display).toBe("none");
+  expect(context.selectionAreaWasTriggered).toBe(true);
+  expect(context.canvasElement.releasePointerCapture).toHaveBeenCalledWith(7);
 });
 
 test("chooses keyboard targets by rendered direction", () => {

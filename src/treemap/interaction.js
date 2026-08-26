@@ -309,6 +309,19 @@ export function onLostPointerCaptureEventListener(e) {
   this.selectionAreaWasTriggered = true;
 }
 
+export function onWindowBlurEventListener() {
+  if (!this.isMouseDown) {
+    return;
+  }
+
+  onPointerCancelEventListener.call(this, {
+    pointerId: this.activePointerId,
+  });
+  // A release after the window regains focus must not complete the canceled
+  // drag or synthesize a zoom click.
+  this.selectionAreaWasTriggered = true;
+}
+
 const WHEEL_NAVIGATION_THRESHOLD = 20;
 const WHEEL_GESTURE_GAP = 250;
 

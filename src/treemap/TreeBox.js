@@ -10,6 +10,7 @@ import {
   onMouseUpEventListener,
   onMouseWheelEventListener,
   onPointerCancelEventListener,
+  onWindowBlurEventListener,
 } from "./interaction";
 import { layoutLayer } from "./layout";
 import {
@@ -73,6 +74,7 @@ export default class TreeBox {
   onMouseUpEventListener = onMouseUpEventListener.bind(this);
   onMouseWheelEventListener = onMouseWheelEventListener.bind(this);
   onPointerCancelEventListener = onPointerCancelEventListener.bind(this);
+  onWindowBlurEventListener = onWindowBlurEventListener.bind(this);
 
   // transitions
   emitZoomEvent = emitZoomEvent.bind(this);
@@ -245,6 +247,7 @@ export default class TreeBox {
       this.onLostPointerCaptureEventListener
     );
     this.canvasElement.addEventListener("blur", this.onMouseLeaveEventListener);
+    window.addEventListener("blur", this.onWindowBlurEventListener);
     document.addEventListener("pointerup", this.onMouseUpEventListener);
     document.addEventListener(
       "pointercancel",
@@ -280,6 +283,7 @@ export default class TreeBox {
       "blur",
       this.onMouseLeaveEventListener
     );
+    window.removeEventListener("blur", this.onWindowBlurEventListener);
     document.removeEventListener("pointerup", this.onMouseUpEventListener);
     document.removeEventListener(
       "pointercancel",
