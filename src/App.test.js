@@ -43,6 +43,7 @@ test("renders the interactive demo and safely handles root-level controls", () =
   const currentViewHeading = screen.getByRole("heading", {
     name: "Top level",
   });
+  expect(currentViewHeading.parentElement).toHaveClass("chart-heading");
   expect(currentViewHeading).toHaveAttribute("aria-live", "polite");
   expect(currentViewHeading).toHaveAttribute("aria-atomic", "true");
   expect(screen.getByText("Ready to explore")).toHaveAttribute(

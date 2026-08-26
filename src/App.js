@@ -126,7 +126,7 @@ class App extends React.Component {
         <main>
           <section className="chart-card" aria-labelledby="chart-title">
             <div className="chart-toolbar">
-              <div>
+              <div className="chart-heading">
                 <p className="chart-kicker">Current view</p>
                 <h2 id="chart-title" aria-live="polite" aria-atomic="true">
                   {activeLabel}
