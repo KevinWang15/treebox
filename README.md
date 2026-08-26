@@ -28,8 +28,8 @@ Treebox is an interactive TreeMap visualization
 ```bash
 git clone https://github.com/KevinWang15/treebox
 cd treebox
-yarn install
-yarn start
+npm install
+npm start
 ```
 
 # use it

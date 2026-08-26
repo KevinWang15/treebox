@@ -36,7 +36,7 @@
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
   },
-  "resolutions": {
+  "overrides": {
     "@babel/runtime": "7.29.7"
   },
   "browserslist": {
@@ -53,9 +53,9 @@
   },
   "license": "MIT",
   "repository": {
-    "url": "https://github.com/KevinWang15/treebox"
+    "url": "git+https://github.com/KevinWang15/treebox.git"
   },
-  "packageManager": "yarn@1.22.22",
+  "packageManager": "npm@11.16.0",
   "husky": {
     "hooks": {
       "pre-commit": "pretty-quick --staged"

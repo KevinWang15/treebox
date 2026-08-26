@@ -12,4 +12,5 @@
   consumers while preserving the legacy `.default` alias, and trim the
   published package payload.
 - Replace the legacy Create React App toolchain with Vite and Vitest, update the
-  demo to React 19, and resolve all dependency audit findings.
+  demo to React 19, standardize reproducible installs on npm, and resolve all
+  dependency audit findings.
