@@ -1,6 +1,9 @@
 import { calcTransitioningViewport } from "./viewport";
 
 export function transitionTo(viewport) {
+  if (this.destroyed) {
+    return Promise.resolve(false);
+  }
   if (this.viewportTransitionInProgress) {
     return Promise.reject(new Error("Viewport transition already in progress"));
   }
@@ -65,6 +68,7 @@ export function emitZoomEvent(direction) {
 
 export function zoomIn(targetNode) {
   if (
+    this.destroyed ||
     !targetNode ||
     !targetNode.children ||
     !targetNode.children.length ||
@@ -97,6 +101,9 @@ export function zoomIn(targetNode) {
 }
 
 export function zoomOut() {
+  if (this.destroyed) {
+    return Promise.resolve(false);
+  }
   if (this.viewportTransitionInProgress) {
     return queueNavigation.call(this, "out");
   }
@@ -131,6 +138,9 @@ export function zoomOut() {
 }
 
 export function undoZoomOut() {
+  if (this.destroyed) {
+    return Promise.resolve(false);
+  }
   if (this.viewportTransitionInProgress) {
     return queueNavigation.call(this, "redo");
   }

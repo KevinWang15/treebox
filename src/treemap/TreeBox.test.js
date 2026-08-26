@@ -188,3 +188,29 @@ test("updates the canvas backing store when the display pixel ratio changes", ()
   expect(treebox.setPixelRatio(1)).toBe(false);
   host.remove();
 });
+
+test("makes navigation methods safe after destroy", async () => {
+  const host = document.createElement("div");
+  Object.defineProperties(host, {
+    clientWidth: { configurable: true, value: 320 },
+    clientHeight: { configurable: true, value: 180 },
+    getBoundingClientRect: {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 320, height: 180 }),
+    },
+  });
+  document.body.appendChild(host);
+  const target = {
+    text: "group",
+    children: [{ text: "leaf", weight: 1, children: null }],
+  };
+  const treebox = new TreeBox({ data: [target], domElement: host });
+  treebox.destroy();
+
+  await expect(treebox.zoomIn(target)).resolves.toBe(false);
+  await expect(treebox.zoomOut()).resolves.toBe(false);
+  await expect(treebox.undoZoomOut()).resolves.toBe(false);
+  await expect(treebox.transitionTo(target)).resolves.toBe(false);
+
+  host.remove();
+});
