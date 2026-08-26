@@ -215,6 +215,17 @@ kbd {
 
   .chart-toolbar {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .chart-actions,
+  .hover-status {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .chart-actions button {
+    width: 100%;
   }
 
   .interaction-guide {
