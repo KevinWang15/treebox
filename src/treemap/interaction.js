@@ -126,6 +126,19 @@ export function findDirectionalItem(items, currentItem, key) {
   return bestItem;
 }
 
+function itemsInViewport(items, viewport) {
+  if (!viewport) {
+    return items;
+  }
+  return items.filter(
+    (item) =>
+      item.x1 > viewport.x0 &&
+      item.x0 < viewport.x1 &&
+      item.y1 > viewport.y0 &&
+      item.y0 < viewport.y1
+  );
+}
+
 export function findItemAtPosition({ x, y }) {
   const transformed = this.viewportUtils.reverseTransform({
     x0: x,
@@ -499,7 +512,10 @@ export function onKeyDownEventListener(e) {
 
   if (["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"].includes(e.key)) {
     e.preventDefault();
-    const items = this.activeNode.children || [];
+    const items = itemsInViewport(
+      this.activeNode.children || [],
+      this.viewport
+    );
     updateHoveredItem.call(
       this,
       findDirectionalItem(items, this.lastHoveringItem, e.key)
@@ -512,8 +528,10 @@ export function onKeyDownEventListener(e) {
   }
 
   e.preventDefault();
-  const selectedItem =
-    this.lastHoveringItem || (this.activeNode.children || [])[0];
+  const items = itemsInViewport(this.activeNode.children || [], this.viewport);
+  const selectedItem = items.includes(this.lastHoveringItem)
+    ? this.lastHoveringItem
+    : items[0];
   if (selectedItem && selectedItem.children && selectedItem.children.length) {
     this.zoomIn(selectedItem);
   }

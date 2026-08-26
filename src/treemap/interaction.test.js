@@ -277,6 +277,52 @@ test("chooses keyboard targets by rendered direction", () => {
   expect(findDirectionalItem(items, topLeft, "ArrowLeft")).toBe(topLeft);
 });
 
+test("keeps keyboard selection inside a framed viewport", () => {
+  const offscreen = {
+    text: "offscreen",
+    children: [{}],
+    x0: 0,
+    x1: 40,
+    y0: 0,
+    y1: 40,
+  };
+  const visible = {
+    text: "visible",
+    children: [{}],
+    x0: 60,
+    x1: 100,
+    y0: 60,
+    y1: 100,
+  };
+  const context = {
+    activeNode: { children: [offscreen, visible] },
+    canvasElement: { style: {} },
+    clearRectAndPaintLayer: jest.fn(),
+    emitEvent: jest.fn(),
+    isMouseDown: false,
+    lastHoveringItem: null,
+    viewport: { x0: 50, x1: 110, y0: 50, y1: 110 },
+    viewportTransitionInProgress: false,
+    zoomIn: jest.fn(),
+  };
+
+  onKeyDownEventListener.call(context, {
+    key: "ArrowRight",
+    preventDefault: jest.fn(),
+  });
+
+  expect(context.lastHoveringItem).toBe(visible);
+  expect(context.emitEvent).toHaveBeenCalledWith("hover", visible);
+
+  context.lastHoveringItem = offscreen;
+  onKeyDownEventListener.call(context, {
+    key: "Enter",
+    preventDefault: jest.fn(),
+  });
+
+  expect(context.zoomIn).toHaveBeenCalledWith(visible);
+});
+
 test("emits a null hover payload when the active item is cleared", () => {
   const item = { x0: 0, x1: 10, y0: 0, y1: 10 };
   const context = {
