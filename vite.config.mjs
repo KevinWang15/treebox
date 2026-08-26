@@ -6,6 +6,7 @@ export function createViteConfig({ mode }) {
   const libraryBuild = mode === "library";
 
   return {
+    base: process.env.BASE_PATH || "/",
     plugins: [react()],
     build: libraryBuild
       ? {
