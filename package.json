@@ -19,6 +19,7 @@
     "build-lib": "vite build --mode library",
     "start": "vite",
     "build": "vite build",
+    "benchmark": "vitest bench --run",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm test && npm run build-lib"

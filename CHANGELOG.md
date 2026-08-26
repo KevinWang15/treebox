@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Cull offscreen nodes, cache label layout, and avoid resetting unchanged
+  canvas backing stores during repaints.
+- Cache canvas geometry per animation frame and use a spatial hit-test index
+  for large sibling layers.
+- Reduce large-layer layout work with one stable sort, normalized prefix sums,
+  and range partitioning; add repeatable performance benchmarks.
+
 ## 0.1.3 - 2026-08-26
 
 - Harden pointer, touch, wheel, and keyboard navigation, including rapid and

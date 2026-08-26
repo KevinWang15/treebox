@@ -16,7 +16,7 @@ Treebox is an interactive TreeMap visualization.
 - customize text / color / weight
 - wraps long and multiline labels within their available bounds
 - fires events (so you can implement tooltip, etc.)
-- no runtime dependencies (about 8kb gzipped)
+- no runtime dependencies (about 10kb gzipped)
 - MIT license
 
 ## Demo
@@ -36,6 +36,9 @@ cd treebox
 npm install
 npm start
 ```
+
+Run the repeatable layout, painting, label, and hit-testing benchmarks with
+`npm run benchmark`.
 
 ## Install
 

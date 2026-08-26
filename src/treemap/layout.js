@@ -1,7 +1,7 @@
 export function validateHierarchy(
   data,
   ancestors = new Set(),
-  seenItems = new Set()
+  seenItems = new Set(),
 ) {
   if (!Array.isArray(data)) {
     throw new TypeError("Treemap layer data must be an array");
@@ -47,7 +47,29 @@ export function layoutLayer(data, { x0, x1, y0, y1, depth }) {
   }
 
   if (data.length === 1) {
-    const item = data[0];
+    layoutRange(data, 0, 1, { x0, x1, y0, y1, depth }, null);
+    return;
+  }
+
+  const items = [...data].sort((a, b) => {
+    if (a.weight === b.weight) {
+      return 0;
+    }
+    return a.weight > b.weight ? -1 : 1;
+  });
+  layoutRange(
+    items,
+    0,
+    items.length,
+    { x0, x1, y0, y1, depth },
+    createWeightTable(items, 0, items.length),
+  );
+}
+
+function layoutRange(items, start, end, bounds, weightTable) {
+  const { x0, x1, y0, y1, depth } = bounds;
+  if (end - start === 1) {
+    const item = items[start];
     item.x0 = x0;
     item.x1 = x1;
     item.y0 = y0;
@@ -67,88 +89,83 @@ export function layoutLayer(data, { x0, x1, y0, y1, depth }) {
     }
     return;
   }
-  const [group1, group2] = divideIntoTwoGroups(data);
+
+  let totalWeight = rangeWeight(weightTable, start, end);
+  if (!(totalWeight > 0)) {
+    // Very small weights can disappear behind a much larger prefix sum.
+    // Rebase that isolated range so its internal proportions remain usable.
+    weightTable = createWeightTable(items, start, end);
+    totalWeight = rangeWeight(weightTable, start, end);
+  }
+  const split = findWeightSplit(weightTable, start, end, totalWeight / 2);
+  const group1Share = rangeWeight(weightTable, start, split) / totalWeight;
 
   const width = x1 - x0;
   const height = y1 - y0;
 
   if (width > height) {
     //left-right
-    const g1width = Math.round(width * calcWeightShare(group1, data));
-    layoutLayer(group1, { x0, x1: x0 + g1width, y0, y1, depth });
-    layoutLayer(group2, { x0: x0 + g1width, x1, y0, y1, depth });
+    const g1width = Math.round(width * group1Share);
+    layoutRange(
+      items,
+      start,
+      split,
+      { x0, x1: x0 + g1width, y0, y1, depth },
+      weightTable,
+    );
+    layoutRange(
+      items,
+      split,
+      end,
+      { x0: x0 + g1width, x1, y0, y1, depth },
+      weightTable,
+    );
   } else {
     //top-bottom
-    const g1height = Math.round(height * calcWeightShare(group1, data));
-    layoutLayer(group1, { x0, x1, y0, y1: y0 + g1height, depth });
-    layoutLayer(group2, { x0, x1, y0: y0 + g1height, y1, depth });
+    const g1height = Math.round(height * group1Share);
+    layoutRange(
+      items,
+      start,
+      split,
+      { x0, x1, y0, y1: y0 + g1height, depth },
+      weightTable,
+    );
+    layoutRange(
+      items,
+      split,
+      end,
+      { x0, x1, y0: y0 + g1height, y1, depth },
+      weightTable,
+    );
   }
 }
 
-function divideIntoTwoGroups(data) {
-  const totalWeight = calcTotalWeight(data);
-  const scale = Number.isFinite(totalWeight) ? 1 : calcMaxWeight(data);
-  const targetWeightForGroup1 =
-    (Number.isFinite(totalWeight)
-      ? totalWeight
-      : calcScaledTotalWeight(data, scale)) / 2;
-  const group1 = [];
-  const group2 = [];
-  let currentWeight = 0;
-  const array = [...data].sort((x, y) => {
-    return y.weight - x.weight;
-  });
-  for (let item of array) {
-    if (currentWeight < targetWeightForGroup1) {
-      group1.push(item);
+function createWeightTable(items, start, end) {
+  const scale = items[start].weight;
+  const prefix = new Float64Array(end - start + 1);
+  for (let index = start; index < end; index++) {
+    prefix[index - start + 1] =
+      prefix[index - start] + items[index].weight / scale;
+  }
+  return { offset: start, prefix };
+}
+
+function rangeWeight({ offset, prefix }, start, end) {
+  return prefix[end - offset] - prefix[start - offset];
+}
+
+function findWeightSplit(weightTable, start, end, targetWeight) {
+  let low = start + 1;
+  let high = end;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (rangeWeight(weightTable, start, middle) < targetWeight) {
+      low = middle + 1;
     } else {
-      group2.push(item);
+      high = middle;
     }
-    currentWeight += item.weight / scale;
   }
-  if (group1.length === 0) {
-    group1.push(group2.shift());
-  } else if (group2.length === 0) {
-    group2.push(group1.shift());
-  }
-  return [group1, group2];
-}
-
-function calcTotalWeight(data) {
-  let result = 0;
-  for (let item of data) {
-    result += item.weight;
-  }
-  return result;
-}
-
-function calcMaxWeight(data) {
-  let result = 0;
-  for (const item of data) {
-    result = Math.max(result, item.weight);
-  }
-  return result;
-}
-
-function calcScaledTotalWeight(data, scale) {
-  let result = 0;
-  for (const item of data) {
-    result += item.weight / scale;
-  }
-  return result;
-}
-
-function calcWeightShare(group, data) {
-  const totalWeight = calcTotalWeight(data);
-  const groupWeight = calcTotalWeight(group);
-  if (Number.isFinite(totalWeight) && Number.isFinite(groupWeight)) {
-    return groupWeight / totalWeight;
-  }
-
-  const scale = calcMaxWeight(data);
-  return (
-    calcScaledTotalWeight(group, scale) / calcScaledTotalWeight(data, scale)
-  );
+  return Math.min(low, end - 1);
 }
 
 function calculateWeight(item) {
@@ -163,6 +180,9 @@ function calculateWeight(item) {
   let w = 0;
   for (let child of item.children) {
     const childWeight = calculateWeight(child);
+    if (!Number.isFinite(child.weight) || child.weight <= 0) {
+      child.weight = childWeight;
+    }
     if (w > Number.MAX_VALUE - childWeight) {
       return Number.MAX_VALUE;
     }
