@@ -2,6 +2,7 @@ import {
   findDirectionalItem,
   onClickEventListener,
   onKeyDownEventListener,
+  onLostPointerCaptureEventListener,
   onMouseLeaveEventListener,
   onMouseDownEventListener,
   onMouseUpEventListener,
@@ -167,6 +168,45 @@ test("cancels a touch selection when another finger arrives", () => {
   expect(context.selectionAreaWasTriggered).toBe(true);
   expect(context.selectionAreaElement.style.display).toBe("none");
   expect(context.canvasElement.releasePointerCapture).toHaveBeenCalledWith(7);
+});
+
+test("cancels an active selection when pointer capture is lost", () => {
+  const context = {
+    isMouseDown: true,
+    activePointerId: 7,
+    activePointerType: "mouse",
+    lastMouseDownPos: { x: 10, y: 10 },
+    selectionAreaViewPort: { x0: 10, x1: 90, y0: 10, y1: 90 },
+    selectionAreaWasTriggered: false,
+    selectionAreaElement: { style: { display: "block" } },
+    canvasElement: {
+      hasPointerCapture: jest.fn(() => false),
+      releasePointerCapture: jest.fn(),
+    },
+  };
+
+  onLostPointerCaptureEventListener.call(context, { pointerId: 7 });
+
+  expect(context.isMouseDown).toBe(false);
+  expect(context.activePointerId).toBeUndefined();
+  expect(context.activePointerType).toBeUndefined();
+  expect(context.lastMouseDownPos).toBeNull();
+  expect(context.selectionAreaViewPort).toBeNull();
+  expect(context.selectionAreaElement.style.display).toBe("none");
+  expect(context.selectionAreaWasTriggered).toBe(true);
+  expect(context.canvasElement.releasePointerCapture).not.toHaveBeenCalled();
+});
+
+test("ignores capture loss after the pointer interaction has settled", () => {
+  const context = {
+    isMouseDown: false,
+    activePointerId: undefined,
+    selectionAreaWasTriggered: false,
+  };
+
+  onLostPointerCaptureEventListener.call(context, { pointerId: 7 });
+
+  expect(context.selectionAreaWasTriggered).toBe(false);
 });
 
 test("chooses keyboard targets by rendered direction", () => {

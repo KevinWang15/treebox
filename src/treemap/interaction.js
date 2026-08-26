@@ -293,6 +293,22 @@ export function onPointerCancelEventListener(e) {
   this.activePointerType = undefined;
 }
 
+export function onLostPointerCaptureEventListener(e) {
+  if (
+    !this.isMouseDown ||
+    (this.activePointerId !== undefined &&
+      e.pointerId !== undefined &&
+      e.pointerId !== this.activePointerId)
+  ) {
+    return;
+  }
+
+  onPointerCancelEventListener.call(this, e);
+  // The physical pointer can still release over the canvas and synthesize a
+  // click after capture was revoked. Consume that stale activation.
+  this.selectionAreaWasTriggered = true;
+}
+
 const WHEEL_NAVIGATION_THRESHOLD = 20;
 const WHEEL_GESTURE_GAP = 250;
 

@@ -3,6 +3,7 @@ import { clearAll, clearRect, fillRect, fillText } from "./canvas";
 import {
   onClickEventListener,
   onKeyDownEventListener,
+  onLostPointerCaptureEventListener,
   onMouseDownEventListener,
   onMouseLeaveEventListener,
   onMouseMove,
@@ -65,6 +66,8 @@ export default class TreeBox {
   onMouseMove = onMouseMove.bind(this);
   onClickEventListener = onClickEventListener.bind(this);
   onKeyDownEventListener = onKeyDownEventListener.bind(this);
+  onLostPointerCaptureEventListener =
+    onLostPointerCaptureEventListener.bind(this);
   onMouseDownEventListener = onMouseDownEventListener.bind(this);
   onMouseLeaveEventListener = onMouseLeaveEventListener.bind(this);
   onMouseUpEventListener = onMouseUpEventListener.bind(this);
@@ -237,6 +240,10 @@ export default class TreeBox {
       "pointerleave",
       this.onMouseLeaveEventListener
     );
+    this.canvasElement.addEventListener(
+      "lostpointercapture",
+      this.onLostPointerCaptureEventListener
+    );
     this.canvasElement.addEventListener("blur", this.onMouseLeaveEventListener);
     document.addEventListener("pointerup", this.onMouseUpEventListener);
     document.addEventListener(
@@ -264,6 +271,10 @@ export default class TreeBox {
     this.canvasElement.removeEventListener(
       "pointerleave",
       this.onMouseLeaveEventListener
+    );
+    this.canvasElement.removeEventListener(
+      "lostpointercapture",
+      this.onLostPointerCaptureEventListener
     );
     this.canvasElement.removeEventListener(
       "blur",
