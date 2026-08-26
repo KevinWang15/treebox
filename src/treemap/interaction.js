@@ -452,15 +452,14 @@ export function onKeyDownEventListener(e) {
     return;
   }
 
+  if (e.key !== "Enter" && e.key !== " ") {
+    return;
+  }
+
+  e.preventDefault();
   const selectedItem =
     this.lastHoveringItem || (this.activeNode.children || [])[0];
-  if (
-    (e.key === "Enter" || e.key === " ") &&
-    selectedItem &&
-    selectedItem.children &&
-    selectedItem.children.length
-  ) {
-    e.preventDefault();
+  if (selectedItem && selectedItem.children && selectedItem.children.length) {
     this.zoomIn(selectedItem);
   }
 }
