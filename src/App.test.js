@@ -13,6 +13,7 @@ const canvasContext = {
   rect: jest.fn(),
   restore: jest.fn(),
   save: jest.fn(),
+  strokeText: jest.fn(),
 };
 
 beforeEach(() => {

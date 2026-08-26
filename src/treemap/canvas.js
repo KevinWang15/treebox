@@ -27,6 +27,12 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
 
   this.canvas2dContext.font = fontSize + "px sans-serif";
   this.canvas2dContext.fillStyle = fillStyle;
+  this.canvas2dContext.lineJoin = "round";
+  this.canvas2dContext.lineWidth = Math.max(
+    this.pixelRatio,
+    fontSize * 0.06
+  );
+  this.canvas2dContext.strokeStyle = "rgba(9, 14, 25, 0.84)";
   this.canvas2dContext.textAlign = "center";
   this.canvas2dContext.textBaseline = "middle";
 
@@ -93,6 +99,12 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
   let startY = centerY - totalHeight / 2 + lineHeight / 2;
 
   lines.forEach((line, index) => {
+    this.canvas2dContext.strokeText(
+      line,
+      centerX,
+      startY + index * lineHeight,
+      maxWidth
+    );
     this.canvas2dContext.fillText(
       line,
       centerX,

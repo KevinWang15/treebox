@@ -9,6 +9,7 @@ test("wraps an unbroken label within the available bounds", () => {
     rect: jest.fn(),
     restore: jest.fn(),
     save: jest.fn(),
+    strokeText: jest.fn(),
   };
   const context = {
     BOX_MARGIN: 1,
@@ -39,6 +40,7 @@ test("ellipsizes wrapped text that exceeds the available height", () => {
     rect: jest.fn(),
     restore: jest.fn(),
     save: jest.fn(),
+    strokeText: jest.fn(),
   };
 
   fillText.call(
@@ -66,6 +68,7 @@ test("preserves explicit line breaks", () => {
     rect: jest.fn(),
     restore: jest.fn(),
     save: jest.fn(),
+    strokeText: jest.fn(),
   };
 
   fillText.call(
@@ -91,6 +94,7 @@ test("keeps box and text margins constant at high pixel ratios", () => {
     rect: jest.fn(),
     restore: jest.fn(),
     save: jest.fn(),
+    strokeText: jest.fn(),
   };
   const context = {
     BOX_MARGIN: 1,
@@ -111,6 +115,17 @@ test("keeps box and text margins constant at high pixel ratios", () => {
     100,
     196
   );
+  expect(canvas2dContext.strokeText).toHaveBeenCalledWith(
+    "label",
+    100,
+    100,
+    196
+  );
+  expect(canvas2dContext.lineWidth).toBe(2);
+  expect(canvas2dContext.strokeStyle).toBe("rgba(9, 14, 25, 0.84)");
+  expect(canvas2dContext.strokeText.mock.invocationCallOrder[0]).toBeLessThan(
+    canvas2dContext.fillText.mock.invocationCallOrder[0]
+  );
 });
 
 test("uses a CSS-pixel minimum for high-resolution text", () => {
@@ -122,6 +137,7 @@ test("uses a CSS-pixel minimum for high-resolution text", () => {
     rect: jest.fn(),
     restore: jest.fn(),
     save: jest.fn(),
+    strokeText: jest.fn(),
   };
 
   fillText.call(

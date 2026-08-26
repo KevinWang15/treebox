@@ -16,6 +16,7 @@ const canvasContext = {
   rect() {},
   restore() {},
   save() {},
+  strokeText() {},
 };
 
 beforeAll(() => {
