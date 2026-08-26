@@ -401,6 +401,7 @@ test("cancels an active selection when Escape is pressed", () => {
 test("ignores Escape auto-repeat so one held key steps out once", () => {
   const context = {
     isMouseDown: false,
+    viewportHistory: [{}],
     zoomOut: jest.fn(),
   };
   const event = { key: "Escape", repeat: true, preventDefault: jest.fn() };
@@ -409,6 +410,34 @@ test("ignores Escape auto-repeat so one held key steps out once", () => {
 
   expect(event.preventDefault).toHaveBeenCalledTimes(1);
   expect(context.zoomOut).not.toHaveBeenCalled();
+});
+
+test("leaves Escape untouched when there is no view to zoom out from", () => {
+  const context = {
+    isMouseDown: false,
+    viewportHistory: [],
+    zoomOut: jest.fn(),
+  };
+  const event = { key: "Escape", repeat: false, preventDefault: jest.fn() };
+
+  onKeyDownEventListener.call(context, event);
+
+  expect(event.preventDefault).not.toHaveBeenCalled();
+  expect(context.zoomOut).not.toHaveBeenCalled();
+});
+
+test("consumes Escape when a previous view is available", () => {
+  const context = {
+    isMouseDown: false,
+    viewportHistory: [{}],
+    zoomOut: jest.fn(),
+  };
+  const event = { key: "Escape", repeat: false, preventDefault: jest.fn() };
+
+  onKeyDownEventListener.call(context, event);
+
+  expect(event.preventDefault).toHaveBeenCalledTimes(1);
+  expect(context.zoomOut).toHaveBeenCalledTimes(1);
 });
 
 test.each([

@@ -419,6 +419,9 @@ export function onKeyDownEventListener(e) {
   }
 
   if (e.key === "Escape") {
+    if (!this.isMouseDown && !this.viewportHistory.length) {
+      return;
+    }
     e.preventDefault();
     if (e.repeat) {
       return;
