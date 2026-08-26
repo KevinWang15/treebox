@@ -171,7 +171,7 @@ export function undoZoomOut() {
   });
 }
 
-function repaintHoveredItem() {
+export function repaintHoveredItem() {
   if (!this.lastMousePos) {
     return;
   }

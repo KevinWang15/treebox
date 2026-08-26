@@ -281,4 +281,10 @@ export function repaint({ skipResize = false } = {}) {
   }
 
   this.clearRectAndPaintLayer(this.activeNode, { hovering: false, depth: -1 });
+  if (this.lastHoveringItem && !this.viewportTransitionInProgress) {
+    this.clearRectAndPaintLayer(this.lastHoveringItem, {
+      hovering: true,
+      depth: 0,
+    });
+  }
 }

@@ -1,4 +1,4 @@
-import { paintLayer } from "./paint";
+import { paintLayer, repaint } from "./paint";
 
 function paintAtRatio(pixelRatio) {
   const fillText = jest.fn();
@@ -42,4 +42,31 @@ function paintAtRatio(pixelRatio) {
 test("keeps calculated label sizes constant in CSS pixels", () => {
   expect(paintAtRatio(1)).toBe(10);
   expect(paintAtRatio(2)).toBe(20);
+});
+
+test("restores the current hover layer after a full repaint", () => {
+  const activeNode = { text: "root" };
+  const lastHoveringItem = { text: "hovered" };
+  const clearRectAndPaintLayer = jest.fn();
+  const context = {
+    activeNode,
+    canvasElement: {
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 50 }),
+      style: {},
+    },
+    clearRectAndPaintLayer,
+    destroyed: false,
+    domElement: { clientWidth: 100, clientHeight: 50 },
+    lastHoveringItem,
+    pixelRatio: 2,
+    rootNode: { x1: 100, y1: 50 },
+    viewportTransitionInProgress: false,
+  };
+
+  repaint.call(context, { skipResize: true });
+
+  expect(clearRectAndPaintLayer.mock.calls).toEqual([
+    [activeNode, { hovering: false, depth: -1 }],
+    [lastHoveringItem, { hovering: true, depth: 0 }],
+  ]);
 });

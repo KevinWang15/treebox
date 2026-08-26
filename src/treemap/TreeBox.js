@@ -16,6 +16,7 @@ import {
 import { layoutLayer } from "./layout";
 import {
   emitZoomEvent,
+  repaintHoveredItem,
   transitionTo,
   undoZoomOut,
   zoomIn,
@@ -80,6 +81,7 @@ export default class TreeBox {
 
   // transitions
   emitZoomEvent = emitZoomEvent.bind(this);
+  repaintHoveredItem = repaintHoveredItem.bind(this);
   transitionTo = transitionTo.bind(this);
   zoomIn = zoomIn.bind(this);
   zoomOut = zoomOut.bind(this);

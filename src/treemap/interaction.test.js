@@ -327,8 +327,10 @@ test("emits navigation state after selection zoom", async () => {
     viewportHistoryUndoStack: [{}],
     transitionTo: jest.fn(() => Promise.resolve()),
     repaint: jest.fn(),
+    repaintHoveredItem: jest.fn(),
     emitZoomEvent: jest.fn(),
     destroyed: false,
+    lastHoveringItem: {},
   };
 
   onMouseUpEventListener.call(context, {});
@@ -340,6 +342,8 @@ test("emits navigation state after selection zoom", async () => {
   expect(context.viewportHistoryUndoStack).toHaveLength(0);
   expect(context.repaint).toHaveBeenCalledTimes(1);
   expect(context.emitZoomEvent).toHaveBeenCalledWith("select");
+  expect(context.repaintHoveredItem).toHaveBeenCalledTimes(1);
+  expect(context.lastHoveringItem).toBeNull();
 });
 
 test("ignores a repeated touch activation at the same position", () => {

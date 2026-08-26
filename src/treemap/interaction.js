@@ -236,8 +236,10 @@ export function onMouseUpEventListener(e) {
     this.viewportHistoryUndoStack.splice(0);
     this.transitionTo(selectionAreaViewPort).then(() => {
       if (!this.destroyed) {
+        this.lastHoveringItem = null;
         this.repaint();
         this.emitZoomEvent("select");
+        this.repaintHoveredItem();
       }
     });
   } else if (
