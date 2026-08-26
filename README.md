@@ -83,6 +83,10 @@ function destroyTreebox() {
 // Call destroyTreebox() when the surrounding view is removed.
 ```
 
+CommonJS consumers can use
+`const TreeBox = require("@kevinwang15/treebox")`. Loading `treebox.js`
+directly in a browser exposes the same constructor as `window.treebox`.
+
 # Roadmap
 
 - more customization options

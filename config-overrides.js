@@ -10,6 +10,7 @@ module.exports = function override(config, env) {
       path: config.output.path,
       filename: "treebox.js",
       library: "treebox",
+      libraryExport: "default",
       libraryTarget: "umd",
     };
 
