@@ -55,3 +55,27 @@ test("ellipsizes wrapped text that exceeds the available height", () => {
     98
   );
 });
+
+test("preserves explicit line breaks", () => {
+  const canvas2dContext = {
+    beginPath: jest.fn(),
+    clip: jest.fn(),
+    fillText: jest.fn(),
+    measureText: jest.fn((text) => ({ width: text.length * 10 })),
+    rect: jest.fn(),
+    restore: jest.fn(),
+    save: jest.fn(),
+  };
+
+  fillText.call(
+    { BOX_MARGIN: 1, canvas2dContext },
+    "Revenue\r\nFY 2026",
+    { x0: 0, x1: 100, y0: 0, y1: 100 },
+    20
+  );
+
+  expect(canvas2dContext.fillText.mock.calls).toEqual([
+    ["Revenue", 50, 38, 98],
+    ["FY 2026", 50, 62, 98],
+  ]);
+});

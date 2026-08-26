@@ -34,12 +34,17 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
   const centerY = (bounds.y0 + bounds.y1) / 2;
   const lineHeight = fontSize * 1.2;
 
-  const words = String(text).split(" ");
+  const words = String(text).replace(/\r?\n/g, " \n ").split(" ");
   let line = "";
   let lines = [];
 
   for (let n = 0; n < words.length; n++) {
     let word = words[n];
+    if (word === "\n") {
+      lines.push(line.trim());
+      line = "";
+      continue;
+    }
     const testLine = line + word + " ";
     if (this.canvas2dContext.measureText(testLine).width <= maxWidth) {
       line = testLine;
