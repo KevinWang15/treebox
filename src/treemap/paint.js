@@ -49,9 +49,19 @@ function resolveColor(color, args) {
   return typeof color === "function" ? color(args) : color;
 }
 
+function isNativeCanvasPaint(color) {
+  return (
+    (typeof CanvasGradient === "function" && color instanceof CanvasGradient) ||
+    (typeof CanvasPattern === "function" && color instanceof CanvasPattern)
+  );
+}
+
 function isUsableCanvasColor(item, color, context) {
   if (color === null || color === undefined || color === "") {
     return false;
+  }
+  if (isNativeCanvasPaint(color)) {
+    return true;
   }
 
   const cached = validatedColorCache.get(item);

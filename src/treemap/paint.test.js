@@ -187,6 +187,64 @@ test("falls back when Canvas rejects a configured color", () => {
   }
 });
 
+test("accepts native canvas paints without reparsing them", () => {
+  const OriginalCanvasGradient = global.CanvasGradient;
+  class FakeCanvasGradient {}
+  global.CanvasGradient = FakeCanvasGradient;
+  const gradient = new FakeCanvasGradient();
+  const fillRect = jest.fn();
+  let fillStyleAssignments = 0;
+  const canvas2dContext = {};
+  Object.defineProperty(canvas2dContext, "fillStyle", {
+    configurable: true,
+    get: () => "#000000",
+    set: () => {
+      fillStyleAssignments++;
+    },
+  });
+  const context = {
+    activeNode: {},
+    canvas2dContext,
+    canvasUtils: {
+      clearRect: jest.fn(),
+      fillRect,
+      fillText: jest.fn(),
+    },
+    pixelRatio: 1,
+    transitionTargetNode: null,
+    viewportUtils: {
+      transform: (bounds) => bounds,
+    },
+  };
+  context.paintLayer = paintLayer.bind(context);
+
+  try {
+    context.paintLayer(
+      [
+        {
+          text: "gradient",
+          color: () => gradient,
+          children: null,
+          x0: 0,
+          x1: 100,
+          y0: 0,
+          y1: 60,
+        },
+      ],
+      { hovering: false, depth: 0 }
+    );
+
+    expect(fillRect).toHaveBeenCalledWith(0, 0, 100, 60, { color: gradient });
+    expect(fillStyleAssignments).toBe(0);
+  } finally {
+    if (OriginalCanvasGradient === undefined) {
+      delete global.CanvasGradient;
+    } else {
+      global.CanvasGradient = OriginalCanvasGradient;
+    }
+  }
+});
+
 test("restores the current hover layer after a full repaint", () => {
   const activeNode = { text: "root" };
   const lastHoveringItem = { text: "hovered" };
