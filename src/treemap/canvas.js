@@ -1,8 +1,9 @@
 import { viewportTransform } from "./viewport";
 
 export function fillText(text, bounds, fontSize, fillStyle = "white") {
-  const width = bounds.x1 - bounds.x0 - this.BOX_MARGIN * 2;
-  const height = bounds.y1 - bounds.y0 - this.BOX_MARGIN * 2;
+  const margin = this.BOX_MARGIN * this.pixelRatio;
+  const width = bounds.x1 - bounds.x0 - margin * 2;
+  const height = bounds.y1 - bounds.y0 - margin * 2;
   if (
     text === null ||
     text === undefined ||
@@ -17,8 +18,8 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
   this.canvas2dContext.save();
   this.canvas2dContext.beginPath();
   this.canvas2dContext.rect(
-    bounds.x0 + this.BOX_MARGIN,
-    bounds.y0 + this.BOX_MARGIN,
+    bounds.x0 + margin,
+    bounds.y0 + margin,
     width,
     height
   );
@@ -128,18 +129,17 @@ export function fillRect(x0, y0, w, h, { color }) {
   const x1 = x0 + w;
   const y1 = y0 + h;
   let transformed = viewportTransform.call(this, { x0, y0, x1, y1 });
-  const transformedWidth =
-    transformed.x1 - transformed.x0 - this.BOX_MARGIN * 2;
-  const transformedHeight =
-    transformed.y1 - transformed.y0 - this.BOX_MARGIN * 2;
+  const margin = this.BOX_MARGIN * this.pixelRatio;
+  const transformedWidth = transformed.x1 - transformed.x0 - margin * 2;
+  const transformedHeight = transformed.y1 - transformed.y0 - margin * 2;
   if (transformedWidth <= 0 || transformedHeight <= 0) {
     return;
   }
 
   this.canvas2dContext.fillStyle = color;
   this.canvas2dContext.fillRect(
-    transformed.x0 + this.BOX_MARGIN,
-    transformed.y0 + this.BOX_MARGIN,
+    transformed.x0 + margin,
+    transformed.y0 + margin,
     transformedWidth,
     transformedHeight
   );

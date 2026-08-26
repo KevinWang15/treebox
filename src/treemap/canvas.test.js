@@ -1,4 +1,4 @@
-import { fillText } from "./canvas";
+import { fillRect, fillText } from "./canvas";
 
 test("wraps an unbroken label within the available bounds", () => {
   const canvas2dContext = {
@@ -13,6 +13,7 @@ test("wraps an unbroken label within the available bounds", () => {
   const context = {
     BOX_MARGIN: 1,
     canvas2dContext,
+    pixelRatio: 1,
   };
 
   fillText.call(
@@ -41,7 +42,7 @@ test("ellipsizes wrapped text that exceeds the available height", () => {
   };
 
   fillText.call(
-    { BOX_MARGIN: 1, canvas2dContext },
+    { BOX_MARGIN: 1, canvas2dContext, pixelRatio: 1 },
     "abcdefghijklmnopqrstuv",
     { x0: 0, x1: 100, y0: 0, y1: 40 },
     20
@@ -68,7 +69,7 @@ test("preserves explicit line breaks", () => {
   };
 
   fillText.call(
-    { BOX_MARGIN: 1, canvas2dContext },
+    { BOX_MARGIN: 1, canvas2dContext, pixelRatio: 1 },
     "Revenue\r\nFY 2026",
     { x0: 0, x1: 100, y0: 0, y1: 100 },
     20
@@ -78,4 +79,36 @@ test("preserves explicit line breaks", () => {
     ["Revenue", 50, 38, 98],
     ["FY 2026", 50, 62, 98],
   ]);
+});
+
+test("keeps box and text margins constant at high pixel ratios", () => {
+  const canvas2dContext = {
+    beginPath: jest.fn(),
+    clip: jest.fn(),
+    fillRect: jest.fn(),
+    fillText: jest.fn(),
+    measureText: jest.fn(() => ({ width: 20 })),
+    rect: jest.fn(),
+    restore: jest.fn(),
+    save: jest.fn(),
+  };
+  const context = {
+    BOX_MARGIN: 1,
+    canvas2dContext,
+    canvasElement: { width: 200, height: 200 },
+    pixelRatio: 2,
+    viewport: { x0: 0, x1: 100, y0: 0, y1: 100 },
+  };
+
+  fillRect.call(context, 0, 0, 100, 100, { color: "red" });
+  fillText.call(context, "label", { x0: 0, x1: 200, y0: 0, y1: 200 }, 20);
+
+  expect(canvas2dContext.fillRect).toHaveBeenCalledWith(2, 2, 196, 196);
+  expect(canvas2dContext.rect).toHaveBeenCalledWith(2, 2, 196, 196);
+  expect(canvas2dContext.fillText).toHaveBeenCalledWith(
+    "label",
+    100,
+    100,
+    196
+  );
 });
