@@ -2,6 +2,10 @@
   "name": "@kevinwang15/treebox",
   "version": "0.1.2",
   "main": "./build/treebox.js",
+  "files": [
+    "build/treebox.js",
+    "build/treebox.js.map"
+  ],
   "dependencies": {},
   "description": "Treebox is an interactive TreeMap visualization",
   "keywords": [
