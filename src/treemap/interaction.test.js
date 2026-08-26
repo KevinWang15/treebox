@@ -7,6 +7,7 @@ import {
   onMouseDownEventListener,
   onMouseUpEventListener,
   onMouseWheelEventListener,
+  onScrollEventListener,
   onWindowBlurEventListener,
   updateHoveredItem,
 } from "./interaction";
@@ -235,6 +236,31 @@ test("cancels an active selection when the window loses focus", () => {
   expect(context.selectionAreaElement.style.display).toBe("none");
   expect(context.selectionAreaWasTriggered).toBe(true);
   expect(context.canvasElement.releasePointerCapture).toHaveBeenCalledWith(7);
+});
+
+test("reprojects an active drag when scrolling moves the canvas", () => {
+  const context = {
+    domElementRect: { left: 100, top: 200, width: 300, height: 200 },
+    eventToCanvasPoint: jest.fn(function ({ clientX, clientY }) {
+      this.domElementRect = { left: 100, top: 100, width: 300, height: 200 };
+      return {
+        x: clientX - this.domElementRect.left,
+        y: clientY - this.domElementRect.top,
+      };
+    }),
+    isMouseDown: true,
+    lastMousePos: { x: 20, y: 30 },
+    onMouseMove: jest.fn(),
+  };
+
+  onScrollEventListener.call(context);
+
+  expect(context.eventToCanvasPoint).toHaveBeenCalledWith({
+    clientX: 120,
+    clientY: 230,
+  });
+  expect(context.onMouseMove).toHaveBeenCalledWith({ x: 20, y: 130 });
+  expect(context.lastMousePos).toEqual({ x: 20, y: 130 });
 });
 
 test("chooses keyboard targets by rendered direction", () => {

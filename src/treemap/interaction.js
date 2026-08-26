@@ -322,6 +322,34 @@ export function onWindowBlurEventListener() {
   this.selectionAreaWasTriggered = true;
 }
 
+export function onScrollEventListener() {
+  if (!this.lastMousePos) {
+    return;
+  }
+
+  // Preserve the pointer's viewport position while refreshing the canvas
+  // bounds. Scrolling moves the canvas beneath a stationary captured pointer.
+  const clientPoint = {
+    clientX: this.domElementRect.left + this.lastMousePos.x,
+    clientY: this.domElementRect.top + this.lastMousePos.y,
+  };
+  const point = this.eventToCanvasPoint(clientPoint);
+
+  if (
+    !this.isMouseDown &&
+    (point.x < 0 ||
+      point.x > this.domElementRect.width ||
+      point.y < 0 ||
+      point.y > this.domElementRect.height)
+  ) {
+    onMouseLeaveEventListener.call(this);
+    return;
+  }
+
+  this.onMouseMove(point);
+  this.lastMousePos = point;
+}
+
 const WHEEL_NAVIGATION_THRESHOLD = 20;
 const WHEEL_GESTURE_GAP = 250;
 
