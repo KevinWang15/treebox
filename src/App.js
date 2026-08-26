@@ -108,6 +108,17 @@ class App extends React.Component {
     }
   };
 
+  handleZoomOutKeyDown = (event) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    event.preventDefault();
+    if (!event.repeat) {
+      this.handleZoomOut();
+    }
+  };
+
   render() {
     const { activeLabel, canZoomOut, hoveredLabel } = this.state;
 
@@ -147,6 +158,7 @@ class App extends React.Component {
                   disabled={!canZoomOut}
                   aria-keyshortcuts="Escape"
                   onClick={this.handleZoomOut}
+                  onKeyDown={this.handleZoomOutKeyDown}
                 >
                   Zoom out <kbd>Esc</kbd>
                 </button>

@@ -92,6 +92,16 @@ test("renders the interactive demo and safely handles root-level controls", () =
     screen.getByRole("heading", { name: "Selected group" })
   ).toBeInTheDocument();
 
+  const zoomOut = jest
+    .spyOn(window.treebox, "zoomOut")
+    .mockResolvedValue(false);
+  zoomOutButton.focus();
+  fireEvent.keyDown(zoomOutButton, { key: "Escape", repeat: true });
+  expect(zoomOut).not.toHaveBeenCalled();
+  fireEvent.keyDown(zoomOutButton, { key: "Escape" });
+  expect(zoomOut).toHaveBeenCalledTimes(1);
+  expect(document.activeElement).toBe(canvas);
+
   unmount();
   expect(
     window.matchMedia.mock.results[1].value.removeEventListener
