@@ -44,6 +44,44 @@ test("keeps calculated label sizes constant in CSS pixels", () => {
   expect(paintAtRatio(2)).toBe(20);
 });
 
+test("uses a static canvas color without replacing it with a fallback", () => {
+  const fillRect = jest.fn();
+  const context = {
+    activeNode: {},
+    canvas2dContext: {},
+    canvasUtils: {
+      clearRect: jest.fn(),
+      fillRect,
+      fillText: jest.fn(),
+    },
+    pixelRatio: 1,
+    transitionTargetNode: null,
+    viewportUtils: {
+      transform: (bounds) => bounds,
+    },
+  };
+  context.paintLayer = paintLayer.bind(context);
+
+  context.paintLayer(
+    [
+      {
+        text: "static color",
+        color: "#ff0000",
+        children: null,
+        x0: 0,
+        x1: 100,
+        y0: 0,
+        y1: 60,
+      },
+    ],
+    { hovering: false, depth: 0 }
+  );
+
+  expect(fillRect).toHaveBeenCalledWith(0, 0, 100, 60, {
+    color: "#ff0000",
+  });
+});
+
 test("restores the current hover layer after a full repaint", () => {
   const activeNode = { text: "root" };
   const lastHoveringItem = { text: "hovered" };

@@ -46,7 +46,7 @@ export function genData(layers = 4) {
     const children = layers - 1 > 0 ? genData(layers - 1) : null;
     result.push({
       text: `${layers}-${i}`,
-      color: ({ ctx, hovering, item, bounds }) => "red",
+      color: "red",
       children,
       weight: children ? null : Math.floor(10 * (1 + 2 * Math.random())),
     });
@@ -55,6 +55,9 @@ export function genData(layers = 4) {
   return result;
 }
 ```
+
+`color` accepts a CSS color string or a callback receiving
+`{ ctx, hovering, item, bounds }` when the color needs to be dynamic.
 
 ```javascript
 import TreeBox from "@kevinwang15/treebox";

@@ -43,6 +43,10 @@ function autoGenerateColor(item) {
   return color;
 }
 
+function resolveColor(color, args) {
+  return typeof color === "function" ? color(args) : color;
+}
+
 /**
  * low-level api to actually draw to the canvas.
  * will be called multiple times during a transition
@@ -62,7 +66,7 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
 
     let itemColor;
     try {
-      itemColor = (item.color || autoGenerateColor(item))({
+      itemColor = resolveColor(item.color || autoGenerateColor(item), {
         hovering,
         ctx: this.canvas2dContext,
         bounds,
