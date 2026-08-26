@@ -17,11 +17,35 @@ function createWheelEvent(deltaY, timeStamp = 0, deltaMode = 0) {
   return { deltaMode, deltaY, preventDefault: jest.fn(), timeStamp };
 }
 
-test("ignores repeated clicks so a double-click cannot skip a level", () => {
+test("accepts a consecutive click after the previous transition settles", () => {
+  const target = {
+    children: [{}],
+    x0: 0,
+    x1: 20,
+    y0: 0,
+    y1: 20,
+  };
   const context = {
+    activeNode: { children: [target] },
     selectionAreaWasTriggered: false,
     viewportTransitionInProgress: false,
     transitionTargetNode: null,
+    eventToCanvasPoint: jest.fn(() => ({ x: 10, y: 10 })),
+    viewportUtils: { reverseTransform: (point) => point },
+    zoomIn: jest.fn(),
+  };
+
+  onClickEventListener.call(context, { detail: 2 });
+
+  expect(context.eventToCanvasPoint).toHaveBeenCalledTimes(1);
+  expect(context.zoomIn).toHaveBeenCalledWith(target);
+});
+
+test("ignores a repeated click while the previous transition is active", () => {
+  const context = {
+    selectionAreaWasTriggered: false,
+    viewportTransitionInProgress: true,
+    transitionTargetNode: {},
     eventToCanvasPoint: jest.fn(),
     zoomIn: jest.fn(),
   };

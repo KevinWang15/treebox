@@ -255,9 +255,6 @@ export function onClickEventListener(e) {
     this.selectionAreaWasTriggered = false;
     return;
   }
-  if (e.detail > 1) {
-    return;
-  }
   if (this.viewportTransitionInProgress) {
     return;
   }
