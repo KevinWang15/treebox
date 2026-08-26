@@ -124,10 +124,14 @@ button:disabled {
   cursor: not-allowed;
 }
 
-button:focus-visible,
-canvas:focus-visible {
+button:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 3px;
+}
+
+canvas:focus-visible {
+  outline: 4px solid var(--accent);
+  outline-offset: -4px;
 }
 
 kbd {

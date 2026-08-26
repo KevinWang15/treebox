@@ -40,6 +40,15 @@ test("renders the interactive demo and safely handles root-level controls", () =
   expect(
     screen.getByRole("heading", { name: /see the whole tree/i })
   ).toBeInTheDocument();
+  const currentViewHeading = screen.getByRole("heading", {
+    name: "Top level",
+  });
+  expect(currentViewHeading).toHaveAttribute("aria-live", "polite");
+  expect(currentViewHeading).toHaveAttribute("aria-atomic", "true");
+  expect(screen.getByText("Ready to explore")).toHaveAttribute(
+    "aria-atomic",
+    "true"
+  );
   const zoomOutButton = screen.getByRole("button", { name: /zoom out/i });
   expect(zoomOutButton).toBeDisabled();
   expect(zoomOutButton).toHaveAttribute("aria-keyshortcuts", "Escape");

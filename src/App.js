@@ -128,10 +128,16 @@ class App extends React.Component {
             <div className="chart-toolbar">
               <div>
                 <p className="chart-kicker">Current view</p>
-                <h2 id="chart-title">{activeLabel}</h2>
+                <h2 id="chart-title" aria-live="polite" aria-atomic="true">
+                  {activeLabel}
+                </h2>
               </div>
               <div className="chart-actions">
-                <p className="hover-status" aria-live="polite">
+                <p
+                  className="hover-status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
                   {hoveredLabel
                     ? `Exploring ${hoveredLabel}`
                     : "Ready to explore"}
