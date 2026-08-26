@@ -276,3 +276,22 @@ test("cancels an active selection when Escape is pressed", () => {
   expect(context.selectionAreaElement.style.display).toBe("none");
   expect(context.canvasElement.releasePointerCapture).toHaveBeenCalledWith(7);
 });
+
+test.each(["Enter", " "])("ignores a repeated %p activation keydown", (key) => {
+  const context = {
+    isMouseDown: false,
+    viewportTransitionInProgress: false,
+    activeNode: { children: [{ children: [{}] }] },
+    zoomIn: jest.fn(),
+  };
+  const event = {
+    key,
+    repeat: true,
+    preventDefault: jest.fn(),
+  };
+
+  onKeyDownEventListener.call(context, event);
+
+  expect(event.preventDefault).toHaveBeenCalledTimes(1);
+  expect(context.zoomIn).not.toHaveBeenCalled();
+});

@@ -380,6 +380,11 @@ export function onKeyDownEventListener(e) {
     return;
   }
 
+  if (e.repeat && (e.key === "Enter" || e.key === " ")) {
+    e.preventDefault();
+    return;
+  }
+
   if (this.isMouseDown) {
     if (
       [
