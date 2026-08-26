@@ -1,0 +1,160 @@
+import TreeBox from "./TreeBox";
+
+const gradient = { addColorStop() {} };
+const canvasContext = {
+  beginPath() {},
+  clearRect() {},
+  clip() {},
+  createLinearGradient() {
+    return gradient;
+  },
+  fillRect() {},
+  fillText() {},
+  measureText() {
+    return { width: 10 };
+  },
+  rect() {},
+  restore() {},
+  save() {},
+};
+
+beforeAll(() => {
+  Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+    configurable: true,
+    value: () => canvasContext,
+  });
+  Object.defineProperty(HTMLCanvasElement.prototype, "clientWidth", {
+    configurable: true,
+    get() {
+      return this.width;
+    },
+  });
+  Object.defineProperty(HTMLCanvasElement.prototype, "clientHeight", {
+    configurable: true,
+    get() {
+      return this.height;
+    },
+  });
+});
+
+test("reflows item layout when repaint sees a new container aspect ratio", () => {
+  let width = 600;
+  let height = 300;
+  const host = document.createElement("div");
+  Object.defineProperties(host, {
+    clientWidth: { configurable: true, get: () => width },
+    clientHeight: { configurable: true, get: () => height },
+    getBoundingClientRect: {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width, height }),
+    },
+  });
+  document.body.appendChild(host);
+  const data = [
+    { text: "one", weight: 1, children: null },
+    { text: "two", weight: 1, children: null },
+  ];
+  const treebox = new TreeBox({ data, domElement: host });
+
+  expect(data.every((item) => item.y0 === 0 && item.y1 === 300)).toBe(true);
+
+  width = 300;
+  height = 600;
+  treebox.repaint();
+
+  expect(treebox.rootNode).toMatchObject({ x1: 300, y1: 600 });
+  expect(treebox.viewport).toEqual({ x0: 0, x1: 300, y0: 0, y1: 600 });
+  expect(data.every((item) => item.x0 === 0 && item.x1 === 300)).toBe(true);
+
+  treebox.destroy();
+  host.remove();
+});
+
+test("keeps the viewport coordinate-only while resizing a node view", () => {
+  let width = 600;
+  let height = 300;
+  const host = document.createElement("div");
+  Object.defineProperties(host, {
+    clientWidth: { configurable: true, get: () => width },
+    clientHeight: { configurable: true, get: () => height },
+    getBoundingClientRect: {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width, height }),
+    },
+  });
+  document.body.appendChild(host);
+  const data = [
+    {
+      text: "group",
+      children: [
+        { text: "one", weight: 1, children: null },
+        { text: "two", weight: 1, children: null },
+      ],
+    },
+    { text: "other", weight: 2, children: null },
+  ];
+  const treebox = new TreeBox({ data, domElement: host });
+  treebox.activeNode = data[0];
+  treebox.viewportHistory.push({ node: data[0], viewport: data[0] });
+  Object.assign(treebox.viewport, {
+    x0: data[0].x0,
+    x1: data[0].x1,
+    y0: data[0].y0,
+    y1: data[0].y1,
+  });
+
+  width = 300;
+  height = 600;
+  treebox.repaint();
+
+  expect(Object.keys(treebox.viewport).sort()).toEqual([
+    "x0",
+    "x1",
+    "y0",
+    "y1",
+  ]);
+  expect(treebox.viewport).toEqual({
+    x0: data[0].x0,
+    x1: data[0].x1,
+    y0: data[0].y0,
+    y1: data[0].y1,
+  });
+
+  treebox.destroy();
+  host.remove();
+});
+
+test("defers painting a zero-size chart until its container becomes visible", () => {
+  let width = 0;
+  let height = 0;
+  const host = document.createElement("div");
+  Object.defineProperties(host, {
+    clientWidth: { configurable: true, get: () => width },
+    clientHeight: { configurable: true, get: () => height },
+    getBoundingClientRect: {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width, height }),
+    },
+  });
+  document.body.appendChild(host);
+  const color = jest.fn(() => "red");
+  const treebox = new TreeBox({
+    data: [{ text: "hidden", weight: 1, children: null, color }],
+    domElement: host,
+    pixelRatio: 2,
+  });
+
+  expect(color).not.toHaveBeenCalled();
+  expect(treebox.canvasElement).toMatchObject({ width: 0, height: 0 });
+
+  width = 301;
+  height = 201;
+  treebox.repaint();
+
+  expect(color).toHaveBeenCalled();
+  expect(treebox.rootNode).toMatchObject({ x1: 301, y1: 201 });
+  expect(treebox.canvasElement).toMatchObject({ width: 602, height: 402 });
+
+  treebox.destroy();
+  host.remove();
+});

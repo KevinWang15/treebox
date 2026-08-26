@@ -1,13 +1,26 @@
 import { viewportTransform } from "./viewport";
 
 export function fillText(text, bounds, fontSize, fillStyle = "white") {
+  const width = bounds.x1 - bounds.x0 - this.BOX_MARGIN * 2;
+  const height = bounds.y1 - bounds.y0 - this.BOX_MARGIN * 2;
+  if (
+    text === null ||
+    text === undefined ||
+    String(text).length === 0 ||
+    width <= 0 ||
+    height <= 0 ||
+    fontSize < 6
+  ) {
+    return;
+  }
+
   this.canvas2dContext.save();
   this.canvas2dContext.beginPath();
   this.canvas2dContext.rect(
-      bounds.x0 + this.BOX_MARGIN,
-      bounds.y0 + this.BOX_MARGIN,
-      bounds.x1 - bounds.x0 - this.BOX_MARGIN * 2,
-      bounds.y1 - bounds.y0 - this.BOX_MARGIN * 2
+    bounds.x0 + this.BOX_MARGIN,
+    bounds.y0 + this.BOX_MARGIN,
+    width,
+    height
   );
   this.canvas2dContext.clip();
 
@@ -16,23 +29,23 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
   this.canvas2dContext.textAlign = "center";
   this.canvas2dContext.textBaseline = "middle";
 
-  const maxWidth = bounds.x1 - bounds.x0 - this.BOX_MARGIN * 2;
+  const maxWidth = width;
   const centerX = (bounds.x0 + bounds.x1) / 2;
   const centerY = (bounds.y0 + bounds.y1) / 2;
   const lineHeight = fontSize * 1.2;
 
-  const words = text.split(' ');
-  let line = '';
+  const words = String(text).split(" ");
+  let line = "";
   let lines = [];
 
   for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + ' ';
+    const testLine = line + words[n] + " ";
     const metrics = this.canvas2dContext.measureText(testLine);
     const testWidth = metrics.width;
 
     if (testWidth > maxWidth && n > 0) {
       lines.push(line.trim());
-      line = words[n] + ' ';
+      line = words[n] + " ";
     } else {
       line = testLine;
     }
@@ -40,14 +53,10 @@ export function fillText(text, bounds, fontSize, fillStyle = "white") {
   lines.push(line.trim());
 
   const totalHeight = lines.length * lineHeight;
-  let startY = centerY - (totalHeight / 2) + (lineHeight / 2);
+  let startY = centerY - totalHeight / 2 + lineHeight / 2;
 
   lines.forEach((line, index) => {
-    this.canvas2dContext.fillText(
-        line,
-        centerX,
-        startY + (index * lineHeight)
-    );
+    this.canvas2dContext.fillText(line, centerX, startY + index * lineHeight);
   });
 
   this.canvas2dContext.restore();
@@ -66,11 +75,11 @@ export function clearRect(x0, y0, w, h) {
 }
 
 export function clearAll() {
-  this.canvasUtils.clearRect(
+  this.canvas2dContext.clearRect(
     0,
     0,
-    this.domElement.clientWidth,
-    this.domElement.clientHeight
+    this.canvasElement.width,
+    this.canvasElement.height
   );
 }
 
@@ -78,11 +87,19 @@ export function fillRect(x0, y0, w, h, { color }) {
   const x1 = x0 + w;
   const y1 = y0 + h;
   let transformed = viewportTransform.call(this, { x0, y0, x1, y1 });
+  const transformedWidth =
+    transformed.x1 - transformed.x0 - this.BOX_MARGIN * 2;
+  const transformedHeight =
+    transformed.y1 - transformed.y0 - this.BOX_MARGIN * 2;
+  if (transformedWidth <= 0 || transformedHeight <= 0) {
+    return;
+  }
+
   this.canvas2dContext.fillStyle = color;
   this.canvas2dContext.fillRect(
     transformed.x0 + this.BOX_MARGIN,
     transformed.y0 + this.BOX_MARGIN,
-    transformed.x1 - transformed.x0 - this.BOX_MARGIN * 2,
-    transformed.y1 - transformed.y0 - this.BOX_MARGIN * 2
+    transformedWidth,
+    transformedHeight
   );
 }

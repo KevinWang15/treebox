@@ -11,37 +11,15 @@ function limitTo(value, min, max) {
 }
 
 export function onMouseMove({ x, y }) {
-  const transformed = this.viewportUtils.reverseTransform({
-    x0: x,
-    y0: y,
-    x1: x,
-    y1: y,
-  });
-
-  const tx = transformed.x0;
-  const ty = transformed.y0;
-  for (const e of this.activeNode.children || []) {
-    if (e.x0 < tx && e.x1 > tx && e.y0 < ty && e.y1 > ty) {
-      if (!(this.lastHoveringItem && this.lastHoveringItem === e)) {
-        if (this.lastHoveringItem) {
-          this.clearRectAndPaintLayer(this.lastHoveringItem, {
-            hovering: false,
-            depth: 0,
-          });
-        }
-        this.lastHoveringItem = e;
-        this.clearRectAndPaintLayer(e, { hovering: true, depth: 0 });
-        this.emitEvent("hover", e);
-        break;
-      }
-    }
-  }
+  const item = findItemAtPosition.call(this, { x, y });
+  updateHoveredItem.call(this, item);
 
   if (
     this.isMouseDown &&
     this.lastMouseDownPos &&
     selectionAreaTriggered.call(this, { x, y })
   ) {
+    this.selectionAreaWasTriggered = true;
     let x0 = limitTo(x, 0, this.domElementRect.width);
     let x1 = limitTo(this.lastMouseDownPos.x, 0, this.domElementRect.width);
     let y0 = limitTo(y, 0, this.domElementRect.height);
@@ -70,11 +48,102 @@ export function onMouseMove({ x, y }) {
   }
 }
 
-export function onClickEventListener(e) {
-  let x = e.pageX - this.domElementRect.left;
-  let y = e.pageY - this.domElementRect.top;
+export function updateHoveredItem(item) {
+  if (item === this.lastHoveringItem) {
+    return;
+  }
 
-  if (this.lastMouseDownPos && selectionAreaTriggered.call(this, { x, y })) {
+  const previousItem = this.lastHoveringItem;
+  if (previousItem) {
+    this.clearRectAndPaintLayer(previousItem, {
+      hovering: false,
+      depth: 0,
+    });
+  }
+
+  this.lastHoveringItem = item || null;
+  this.canvasElement.style.cursor =
+    item && item.children && item.children.length ? "pointer" : "default";
+
+  if (item) {
+    this.clearRectAndPaintLayer(item, { hovering: true, depth: 0 });
+    this.emitEvent("hover", item);
+  } else if (previousItem) {
+    this.emitEvent("hover", null);
+  }
+}
+
+function itemCenter(item) {
+  return {
+    x: (item.x0 + item.x1) / 2,
+    y: (item.y0 + item.y1) / 2,
+  };
+}
+
+export function findDirectionalItem(items, currentItem, key) {
+  if (!items.length) {
+    return null;
+  }
+  if (!currentItem || !items.includes(currentItem)) {
+    return [...items].sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0)[0];
+  }
+
+  const direction = {
+    ArrowRight: { axis: "x", crossAxis: "y", sign: 1 },
+    ArrowDown: { axis: "y", crossAxis: "x", sign: 1 },
+    ArrowLeft: { axis: "x", crossAxis: "y", sign: -1 },
+    ArrowUp: { axis: "y", crossAxis: "x", sign: -1 },
+  }[key];
+  if (!direction) {
+    return currentItem;
+  }
+
+  const currentCenter = itemCenter(currentItem);
+  let bestItem = currentItem;
+  let bestScore = Infinity;
+  for (const item of items) {
+    if (item === currentItem) {
+      continue;
+    }
+
+    const center = itemCenter(item);
+    const primaryDistance =
+      (center[direction.axis] - currentCenter[direction.axis]) * direction.sign;
+    if (primaryDistance <= 0) {
+      continue;
+    }
+
+    const crossDistance = Math.abs(
+      center[direction.crossAxis] - currentCenter[direction.crossAxis]
+    );
+    const score = primaryDistance + crossDistance * 2;
+    if (score < bestScore) {
+      bestScore = score;
+      bestItem = item;
+    }
+  }
+
+  return bestItem;
+}
+
+export function findItemAtPosition({ x, y }) {
+  const transformed = this.viewportUtils.reverseTransform({
+    x0: x,
+    y0: y,
+    x1: x,
+    y1: y,
+  });
+
+  const tx = transformed.x0;
+  const ty = transformed.y0;
+  return (this.activeNode.children || []).find(
+    (item) => item.x0 <= tx && item.x1 >= tx && item.y0 <= ty && item.y1 >= ty
+  );
+}
+
+export function onClickEventListener(e) {
+  if (this.selectionAreaWasTriggered) {
+    this.selectionAreaWasTriggered = false;
     return;
   }
   if (this.viewportTransitionInProgress) {
@@ -83,49 +152,264 @@ export function onClickEventListener(e) {
   if (this.transitionTargetNode) {
     return;
   }
-  if (!this.lastHoveringItem.children || !this.lastHoveringItem.children.length) {
+
+  const target = findItemAtPosition.call(this, this.eventToCanvasPoint(e));
+  if (!target || !target.children || !target.children.length) {
     return;
   }
-  if (this.lastHoveringItem) {
-    this.zoomIn(this.lastHoveringItem);
-  }
+
+  this.zoomIn(target);
 }
 
 export function onMouseDownEventListener(e) {
+  if (
+    e.button !== 0 ||
+    e.isPrimary === false ||
+    this.viewportTransitionInProgress
+  ) {
+    return;
+  }
+
   this.isMouseDown = true;
-  this.lastMouseDownPos = {
-    x: e.pageX - this.domElementRect.left,
-    y: e.pageY - this.domElementRect.top,
-  };
+  this.activePointerId = e.pointerId;
+  this.activePointerType = e.pointerType || "mouse";
+  this.selectionAreaWasTriggered = false;
+  this.lastMouseDownPos = this.eventToCanvasPoint(e);
+  if (
+    e.pointerId !== undefined &&
+    typeof this.canvasElement.setPointerCapture === "function"
+  ) {
+    this.canvasElement.setPointerCapture(e.pointerId);
+  }
+  if (this.activePointerType === "touch") {
+    e.preventDefault();
+  }
+  this.canvasElement.focus({ preventScroll: true });
 }
 
 export function onMouseUpEventListener(e) {
+  if (
+    !this.isMouseDown ||
+    (this.activePointerId !== undefined &&
+      e.pointerId !== undefined &&
+      e.pointerId !== this.activePointerId)
+  ) {
+    return;
+  }
+
+  const pointerType = this.activePointerType;
+  const selectionAreaWasTriggered = this.selectionAreaWasTriggered;
   this.isMouseDown = false;
   this.selectionAreaElement.style.display = "none";
-  if (this.selectionAreaViewPort) {
+  const selectionAreaViewPort = this.selectionAreaViewPort;
+  this.selectionAreaViewPort = null;
+  this.lastMouseDownPos = null;
+  if (
+    this.activePointerId !== undefined &&
+    typeof this.canvasElement.hasPointerCapture === "function" &&
+    this.canvasElement.hasPointerCapture(this.activePointerId)
+  ) {
+    this.canvasElement.releasePointerCapture(this.activePointerId);
+  }
+  this.activePointerId = undefined;
+  this.activePointerType = undefined;
+
+  if (selectionAreaViewPort && !this.viewportTransitionInProgress) {
     this.viewportHistory.push({
       node: this.activeNode,
-      viewport: this.selectionAreaViewPort,
+      viewport: selectionAreaViewPort,
     });
-    this.transitionTo(this.selectionAreaViewPort).then(() => {
-      this.repaint();
+    this.viewportHistoryUndoStack.splice(0);
+    this.transitionTo(selectionAreaViewPort).then(() => {
+      if (!this.destroyed) {
+        this.repaint();
+        this.emitZoomEvent("select");
+      }
     });
-    this.selectionAreaViewPort = null;
+  } else if (
+    pointerType === "touch" &&
+    !selectionAreaWasTriggered &&
+    !this.viewportTransitionInProgress
+  ) {
+    const target = findItemAtPosition.call(this, this.eventToCanvasPoint(e));
+    if (target && target.children && target.children.length) {
+      this.zoomIn(target);
+    }
   }
 }
 
+export function onPointerCancelEventListener(e) {
+  if (
+    !this.isMouseDown ||
+    (this.activePointerId !== undefined &&
+      e.pointerId !== undefined &&
+      e.pointerId !== this.activePointerId)
+  ) {
+    return;
+  }
+
+  if (
+    this.activePointerId !== undefined &&
+    typeof this.canvasElement.hasPointerCapture === "function" &&
+    this.canvasElement.hasPointerCapture(this.activePointerId)
+  ) {
+    this.canvasElement.releasePointerCapture(this.activePointerId);
+  }
+  this.isMouseDown = false;
+  this.lastMouseDownPos = null;
+  this.selectionAreaViewPort = null;
+  this.selectionAreaWasTriggered = false;
+  this.selectionAreaElement.style.display = "none";
+  this.activePointerId = undefined;
+  this.activePointerType = undefined;
+}
+
+const WHEEL_NAVIGATION_THRESHOLD = 20;
+const WHEEL_GESTURE_GAP = 250;
+
+function normalizedWheelDelta(e) {
+  if (e.deltaMode === 1) {
+    return e.deltaY * 16;
+  }
+  if (e.deltaMode === 2) {
+    return e.deltaY * this.domElementRect.height;
+  }
+  return e.deltaY;
+}
+
 export function onMouseWheelEventListener(e) {
-  if (e.deltaY < -20) {
+  if (this.isMouseDown) {
+    e.preventDefault();
+    return;
+  }
+
+  const delta = normalizedWheelDelta.call(this, e);
+  const direction = Math.sign(delta);
+  if (!direction) {
+    return;
+  }
+
+  const eventTime = Number.isFinite(e.timeStamp) ? e.timeStamp : Date.now();
+  const continuedGesture =
+    direction === this.wheelGestureDirection &&
+    eventTime - this.wheelLastEventTime <= WHEEL_GESTURE_GAP;
+
+  if (!continuedGesture) {
+    this.wheelDeltaAccumulator = 0;
+    this.wheelGestureDirection = 0;
+  }
+  this.wheelLastEventTime = eventTime;
+
+  const canNavigate =
+    direction > 0
+      ? this.viewportHistory.length > 0
+      : this.viewportHistoryUndoStack.length > 0;
+  if (!canNavigate && !continuedGesture) {
+    return;
+  }
+
+  e.preventDefault();
+  this.wheelGestureDirection = direction;
+
+  // Keep consuming momentum from a gesture that already navigated, even once
+  // the current history entry has been popped for its transition.
+  if (!canNavigate) {
+    return;
+  }
+
+  this.wheelDeltaAccumulator += delta;
+  if (Math.abs(this.wheelDeltaAccumulator) < WHEEL_NAVIGATION_THRESHOLD) {
+    return;
+  }
+
+  this.wheelDeltaAccumulator = 0;
+  if (direction > 0) {
     this.zoomOutThrottled();
-  } else if (e.deltaY > 20) {
+  } else {
     this.undoZoomOutThrottled();
+  }
+}
+
+export function onMouseLeaveEventListener() {
+  this.lastMousePos = null;
+  if (!this.lastHoveringItem) {
+    return;
+  }
+
+  if (this.viewportTransitionInProgress) {
+    this.lastHoveringItem = null;
+    this.canvasElement.style.cursor = "default";
+    this.emitEvent("hover", null);
+    return;
+  }
+
+  updateHoveredItem.call(this, null);
+}
+
+export function onKeyDownEventListener(e) {
+  if (e.key === "Escape") {
+    e.preventDefault();
+    if (this.isMouseDown) {
+      onPointerCancelEventListener.call(this, {
+        pointerId: this.activePointerId,
+      });
+      // Releasing the physical pointer after a keyboard cancellation may still
+      // synthesize a click. Consume that click instead of treating it as zoom.
+      this.selectionAreaWasTriggered = true;
+      return;
+    }
+    this.zoomOut();
+    return;
+  }
+
+  if (this.isMouseDown) {
+    if (
+      [
+        "ArrowRight",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowUp",
+        "Enter",
+        " ",
+      ].includes(e.key)
+    ) {
+      e.preventDefault();
+    }
+    return;
+  }
+
+  if (this.viewportTransitionInProgress) {
+    return;
+  }
+
+  if (["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"].includes(e.key)) {
+    e.preventDefault();
+    const items = this.activeNode.children || [];
+    updateHoveredItem.call(
+      this,
+      findDirectionalItem(items, this.lastHoveringItem, e.key)
+    );
+    return;
+  }
+
+  const selectedItem =
+    this.lastHoveringItem || (this.activeNode.children || [])[0];
+  if (
+    (e.key === "Enter" || e.key === " ") &&
+    selectedItem &&
+    selectedItem.children &&
+    selectedItem.children.length
+  ) {
+    e.preventDefault();
+    this.zoomIn(selectedItem);
   }
 }
 
 export function selectionAreaTriggered({ x, y }) {
   return (
+    Boolean(this.lastMouseDownPos) &&
     Math.abs(x - this.lastMouseDownPos.x) +
       Math.abs(y - this.lastMouseDownPos.y) >
-    this.SELECTION_AREA_TRIGGER_THRESHOLD
+      this.SELECTION_AREA_TRIGGER_THRESHOLD
   );
 }

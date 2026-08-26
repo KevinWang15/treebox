@@ -4,52 +4,130 @@ import TreeBox from "./treemap/TreeBox";
 import { genData } from "./data/data";
 
 class App extends React.Component {
-  componentDidMount() {}
+  state = {
+    activeLabel: "Top level",
+    canZoomOut: false,
+    hoveredLabel: null,
+  };
+
+  chartElement = null;
+  treebox = null;
+
+  componentDidMount() {
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+    this.treebox = new TreeBox({
+      pixelRatio,
+      data: genData(),
+      domElement: this.chartElement,
+      eventHandler: this.handleTreeBoxEvent,
+    });
+    window.treebox = this.treebox;
+    window.addEventListener("resize", this.handleResize);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.handleResize);
+    if (this.treebox) {
+      this.treebox.destroy();
+    }
+    if (window.treebox === this.treebox) {
+      delete window.treebox;
+    }
+    this.treebox = null;
+  }
+
+  handleTreeBoxEvent = (type, payload) => {
+    if (type === "hover") {
+      this.setState({ hoveredLabel: payload ? payload.text : null });
+    }
+    if (type === "zoom") {
+      this.setState({
+        activeLabel: payload.node.text || "Top level",
+        canZoomOut: payload.canZoomOut,
+        hoveredLabel: null,
+      });
+    }
+  };
+
+  handleResize = () => {
+    if (this.treebox) {
+      this.treebox.repaint();
+    }
+  };
+
+  handleZoomOut = () => {
+    if (this.treebox) {
+      this.treebox.zoomOut();
+      this.treebox.canvasElement.focus({ preventScroll: true });
+    }
+  };
 
   render() {
-    const pixelRatio = 2;
+    const { activeLabel, canZoomOut, hoveredLabel } = this.state;
 
     return (
-      <div
-        style={{
-          width: "100%",
-          height: 600,
-          position: "absolute",
-          boxSizing: "border-box",
-          top: "50%",
-          transform: "translateY(-50%)",
-          padding: 50,
-          // background: "#CCC",
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-          }}
-          ref={(domElement) => {
-            if (!domElement) {
-              return;
-            }
-            const treebox = new TreeBox({
-              pixelRatio,
-              data: genData(),
-              domElement,
-              eventHandler: console.log,
-            });
+      <div className="app-shell">
+        <header className="hero">
+          <p className="eyebrow">Interactive canvas treemap</p>
+          <h1>See the whole tree.</h1>
+          <p className="hero-copy">
+            Treebox turns weighted, hierarchical data into a fast, explorable
+            map. Pick a group to move in, or drag across any region for a closer
+            look.
+          </p>
+        </header>
 
-            window.treebox = treebox;
+        <main>
+          <section className="chart-card" aria-labelledby="chart-title">
+            <div className="chart-toolbar">
+              <div>
+                <p className="chart-kicker">Current view</p>
+                <h2 id="chart-title">{activeLabel}</h2>
+              </div>
+              <div className="chart-actions">
+                <p className="hover-status" aria-live="polite">
+                  {hoveredLabel
+                    ? `Exploring ${hoveredLabel}`
+                    : "Ready to explore"}
+                </p>
+                <button
+                  type="button"
+                  disabled={!canZoomOut}
+                  aria-keyshortcuts="Escape"
+                  onClick={this.handleZoomOut}
+                >
+                  Zoom out <kbd>Esc</kbd>
+                </button>
+              </div>
+            </div>
 
-            window.addEventListener("resize", () => {
-              treebox.repaint();
-            });
-            document.addEventListener("keydown", (e) => {
-              if (e.key === "Escape") {
-                treebox.zoomOut();
-              }
-            });
-          }}
-        />
+            <div
+              className="chart-viewport"
+              ref={(element) => {
+                this.chartElement = element;
+              }}
+            />
+          </section>
+
+          <section className="interaction-guide" aria-label="How to explore">
+            <div>
+              <span>01</span>
+              <h3>Open a group</h3>
+              <p>Tap or click a colored block to reveal the next level.</p>
+            </div>
+            <div>
+              <span>02</span>
+              <h3>Frame a detail</h3>
+              <p>Drag a rectangle over any area to magnify it.</p>
+            </div>
+            <div>
+              <span>03</span>
+              <h3>Retrace your path</h3>
+              <p>Scroll down or press Escape to step back out.</p>
+            </div>
+          </section>
+        </main>
       </div>
     );
   }

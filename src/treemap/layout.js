@@ -1,6 +1,16 @@
 export function layoutLayer(data, { x0, x1, y0, y1, depth }) {
+  if (!Array.isArray(data)) {
+    throw new TypeError("Treemap layer data must be an array");
+  }
+  if (!data.length) {
+    return;
+  }
+
   for (let item of data) {
-    if (!item.weight) {
+    if (!item || typeof item !== "object") {
+      throw new TypeError("Treemap items must be objects");
+    }
+    if (!Number.isFinite(item.weight) || item.weight <= 0) {
       item.weight = calculateWeight(item);
     }
   }
@@ -12,6 +22,7 @@ export function layoutLayer(data, { x0, x1, y0, y1, depth }) {
     item.y0 = y0;
     item.y1 = y1;
     item.w = x1 - x0;
+    item.h = y1 - y0;
     item.layoutOk = true;
 
     if (item.children && item.children.length) {
@@ -54,7 +65,7 @@ function divideIntoTwoGroups(data) {
   const group1 = [];
   const group2 = [];
   let currentWright = 0;
-  const array = data.sort((x, y) => {
+  const array = [...data].sort((x, y) => {
     return y.weight - x.weight;
   });
   for (let item of array) {
@@ -82,8 +93,12 @@ function calcTotalWeight(data) {
 }
 
 function calculateWeight(item) {
-  if (item.weight) {
+  if (Number.isFinite(item.weight) && item.weight > 0) {
     return item.weight;
+  }
+
+  if (!Array.isArray(item.children) || !item.children.length) {
+    return 1;
   }
 
   let w = 0;

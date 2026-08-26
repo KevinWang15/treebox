@@ -1,0 +1,231 @@
+import {
+  findDirectionalItem,
+  onKeyDownEventListener,
+  onMouseLeaveEventListener,
+  onMouseUpEventListener,
+  onMouseWheelEventListener,
+  updateHoveredItem,
+} from "./interaction";
+
+function createWheelEvent(deltaY, timeStamp = 0, deltaMode = 0) {
+  return { deltaMode, deltaY, preventDefault: jest.fn(), timeStamp };
+}
+
+test("allows normal page scrolling when there is no zoom history", () => {
+  const context = {
+    viewportHistory: [],
+    viewportHistoryUndoStack: [],
+    zoomOutThrottled: jest.fn(),
+    undoZoomOutThrottled: jest.fn(),
+  };
+  const event = createWheelEvent(120);
+
+  onMouseWheelEventListener.call(context, event);
+
+  expect(event.preventDefault).not.toHaveBeenCalled();
+  expect(context.zoomOutThrottled).not.toHaveBeenCalled();
+});
+
+test("consumes a wheel gesture when it can navigate zoom history", () => {
+  const context = {
+    viewportHistory: [{}],
+    viewportHistoryUndoStack: [],
+    zoomOutThrottled: jest.fn(),
+    undoZoomOutThrottled: jest.fn(),
+  };
+  const event = createWheelEvent(120);
+
+  onMouseWheelEventListener.call(context, event);
+
+  expect(event.preventDefault).toHaveBeenCalledTimes(1);
+  expect(context.zoomOutThrottled).toHaveBeenCalledTimes(1);
+});
+
+test("accumulates high-resolution wheel deltas without scrolling the page", () => {
+  const context = {
+    viewportHistory: [{}],
+    viewportHistoryUndoStack: [],
+    zoomOutThrottled: jest.fn(),
+    undoZoomOutThrottled: jest.fn(),
+  };
+  const events = [
+    createWheelEvent(5, 100),
+    createWheelEvent(5, 120),
+    createWheelEvent(5, 140),
+    createWheelEvent(5, 160),
+  ];
+
+  events.forEach((event) => onMouseWheelEventListener.call(context, event));
+
+  events.forEach((event) =>
+    expect(event.preventDefault).toHaveBeenCalledTimes(1)
+  );
+  expect(context.zoomOutThrottled).toHaveBeenCalledTimes(1);
+});
+
+test("consumes the remaining momentum after wheel navigation starts", () => {
+  const context = {
+    viewportHistory: [{}],
+    viewportHistoryUndoStack: [],
+    zoomOutThrottled: jest.fn(),
+    undoZoomOutThrottled: jest.fn(),
+  };
+  onMouseWheelEventListener.call(context, createWheelEvent(25, 100));
+  context.viewportHistory = [];
+  const momentumEvent = createWheelEvent(5, 140);
+
+  onMouseWheelEventListener.call(context, momentumEvent);
+
+  expect(momentumEvent.preventDefault).toHaveBeenCalledTimes(1);
+  expect(context.zoomOutThrottled).toHaveBeenCalledTimes(1);
+
+  const laterEvent = createWheelEvent(5, 500);
+  onMouseWheelEventListener.call(context, laterEvent);
+  expect(laterEvent.preventDefault).not.toHaveBeenCalled();
+});
+
+test("does not start wheel navigation during an active selection", () => {
+  const context = {
+    isMouseDown: true,
+    viewportHistory: [{}],
+    viewportHistoryUndoStack: [],
+    zoomOutThrottled: jest.fn(),
+    undoZoomOutThrottled: jest.fn(),
+  };
+  const event = createWheelEvent(120);
+
+  onMouseWheelEventListener.call(context, event);
+
+  expect(event.preventDefault).toHaveBeenCalledTimes(1);
+  expect(context.zoomOutThrottled).not.toHaveBeenCalled();
+});
+
+test("chooses keyboard targets by rendered direction", () => {
+  const topLeft = { x0: 0, x1: 10, y0: 0, y1: 10 };
+  const right = { x0: 20, x1: 30, y0: 0, y1: 10 };
+  const down = { x0: 0, x1: 10, y0: 20, y1: 30 };
+  const diagonal = { x0: 20, x1: 30, y0: 20, y1: 30 };
+  const items = [diagonal, down, right, topLeft];
+
+  expect(findDirectionalItem(items, null, "ArrowRight")).toBe(topLeft);
+  expect(findDirectionalItem(items, topLeft, "ArrowRight")).toBe(right);
+  expect(findDirectionalItem(items, topLeft, "ArrowDown")).toBe(down);
+  expect(findDirectionalItem(items, right, "ArrowLeft")).toBe(topLeft);
+  expect(findDirectionalItem(items, topLeft, "ArrowLeft")).toBe(topLeft);
+});
+
+test("emits a null hover payload when the active item is cleared", () => {
+  const item = { x0: 0, x1: 10, y0: 0, y1: 10 };
+  const context = {
+    lastHoveringItem: item,
+    canvasElement: { style: {} },
+    clearRectAndPaintLayer: jest.fn(),
+    emitEvent: jest.fn(),
+  };
+
+  updateHoveredItem.call(context, null);
+
+  expect(context.lastHoveringItem).toBeNull();
+  expect(context.clearRectAndPaintLayer).toHaveBeenCalledWith(item, {
+    hovering: false,
+    depth: 0,
+  });
+  expect(context.emitEvent).toHaveBeenCalledWith("hover", null);
+});
+
+test("forgets stale pointer coordinates when leave occurs during animation", () => {
+  const context = {
+    lastHoveringItem: {},
+    lastMousePos: { x: 20, y: 20 },
+    viewportTransitionInProgress: true,
+    canvasElement: { style: { cursor: "pointer" } },
+    emitEvent: jest.fn(),
+  };
+
+  onMouseLeaveEventListener.call(context);
+
+  expect(context.lastMousePos).toBeNull();
+  expect(context.lastHoveringItem).toBeNull();
+  expect(context.canvasElement.style.cursor).toBe("default");
+  expect(context.emitEvent).toHaveBeenCalledWith("hover", null);
+});
+
+test("emits navigation state after selection zoom", async () => {
+  const selectionViewport = { x0: 10, x1: 90, y0: 10, y1: 90 };
+  const context = {
+    isMouseDown: true,
+    activeNode: { children: [] },
+    activePointerId: undefined,
+    activePointerType: "mouse",
+    lastMouseDownPos: { x: 10, y: 10 },
+    selectionAreaViewPort: selectionViewport,
+    selectionAreaElement: { style: { display: "block" } },
+    viewportHistory: [],
+    viewportHistoryUndoStack: [{}],
+    transitionTo: jest.fn(() => Promise.resolve()),
+    repaint: jest.fn(),
+    emitZoomEvent: jest.fn(),
+    destroyed: false,
+  };
+
+  onMouseUpEventListener.call(context, {});
+  await Promise.resolve();
+
+  expect(context.viewportHistory).toEqual([
+    { node: context.activeNode, viewport: selectionViewport },
+  ]);
+  expect(context.viewportHistoryUndoStack).toHaveLength(0);
+  expect(context.repaint).toHaveBeenCalledTimes(1);
+  expect(context.emitZoomEvent).toHaveBeenCalledWith("select");
+});
+
+test("discards a selection if another transition has started", () => {
+  const selectionViewport = { x0: 10, x1: 90, y0: 10, y1: 90 };
+  const context = {
+    isMouseDown: true,
+    activeNode: { children: [] },
+    activePointerId: undefined,
+    activePointerType: "mouse",
+    lastMouseDownPos: { x: 10, y: 10 },
+    selectionAreaViewPort: selectionViewport,
+    selectionAreaElement: { style: { display: "block" } },
+    viewportHistory: [{}],
+    viewportHistoryUndoStack: [],
+    viewportTransitionInProgress: true,
+    transitionTo: jest.fn(),
+  };
+
+  onMouseUpEventListener.call(context, {});
+
+  expect(context.viewportHistory).toHaveLength(1);
+  expect(context.transitionTo).not.toHaveBeenCalled();
+  expect(context.selectionAreaElement.style.display).toBe("none");
+});
+
+test("cancels an active selection when Escape is pressed", () => {
+  const context = {
+    isMouseDown: true,
+    activePointerId: 7,
+    activePointerType: "mouse",
+    lastMouseDownPos: { x: 10, y: 10 },
+    selectionAreaViewPort: { x0: 10, x1: 90, y0: 10, y1: 90 },
+    selectionAreaWasTriggered: true,
+    selectionAreaElement: { style: { display: "block" } },
+    canvasElement: {
+      hasPointerCapture: jest.fn(() => true),
+      releasePointerCapture: jest.fn(),
+    },
+    zoomOut: jest.fn(),
+  };
+  const event = { key: "Escape", preventDefault: jest.fn() };
+
+  onKeyDownEventListener.call(context, event);
+
+  expect(event.preventDefault).toHaveBeenCalledTimes(1);
+  expect(context.zoomOut).not.toHaveBeenCalled();
+  expect(context.isMouseDown).toBe(false);
+  expect(context.selectionAreaViewPort).toBeNull();
+  expect(context.selectionAreaWasTriggered).toBe(true);
+  expect(context.selectionAreaElement.style.display).toBe("none");
+  expect(context.canvasElement.releasePointerCapture).toHaveBeenCalledWith(7);
+});

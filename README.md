@@ -5,12 +5,15 @@
 Treebox is an interactive TreeMap visualization
 
 - weight-aware multi-level hierarchical treemap layout
-- click on a block to zoom in / "esc" to zoom out
+- click on a block to zoom in / `Esc` or scroll down to zoom out
+- drag to zoom into a selected area; scroll up to retrace a zoom-out
+- keyboard-focusable canvas with arrow, `Enter`, `Space`, and `Esc` controls
+- pointer and touch support, with automatic container resize reflow
 - smooth transition
 - uses canvas & requestAnimationFrame for performance
 - customize text / color / weight
 - fires events (so you can implement tooltip, etc.)
-- no dependency (5kb gzipped)
+- no runtime dependencies (under 8kb gzipped)
 - MIT license
 
 # DEMO
@@ -55,32 +58,26 @@ export function genData(layers = 4) {
 ```javascript
 import TreeBox from "@kevinwang15/treebox";
 
-const pixelRatio = 2;
+const domElement = document.querySelector("#treemap");
+const treebox = new TreeBox({
+  pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+  data: genData(),
+  domElement,
+  eventHandler: (type, payload) => console.log(type, payload),
+});
 
-<div
-  ref={(domElement) => {
-    const treebox = new TreeBox({
-      pixelRatio,
-      data: genData(),
-      domElement,
-      eventHandler: console.log,
-    });
+// Hover events receive the active item, then null when hover/focus leaves.
+// Zoom events include { node, direction, depth, canZoomOut }.
 
-    window.addEventListener("resize", () => {
-      treebox.repaint();
-    });
+function destroyTreebox() {
+  treebox.destroy();
+}
 
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        treebox.zoomOut();
-      }
-    });
-  }}
-/>;
+// Call destroyTreebox() when the surrounding view is removed.
 ```
 
 # Roadmap
 
 - more customization options
 - github.io page
-- automated testing
+- customizable transition timing
