@@ -98,7 +98,6 @@ export function zoomIn(targetNode) {
 
 export function zoomOut() {
   if (this.viewportTransitionInProgress) {
-    this.pendingZoomOut = true;
     return new Promise((resolve) => {
       this.pendingZoomOutResolvers.push(resolve);
     });
@@ -177,9 +176,12 @@ function repaintHoveredItem() {
 }
 
 function schedulePendingZoomOut() {
-  if (!this.pendingZoomOut || this.pendingZoomOutScheduled || this.destroyed) {
+  if (
+    !this.pendingZoomOutResolvers.length ||
+    this.pendingZoomOutScheduled ||
+    this.destroyed
+  ) {
     if (this.destroyed && this.pendingZoomOutResolvers.length) {
-      this.pendingZoomOut = false;
       this.pendingZoomOutResolvers
         .splice(0)
         .forEach((resolve) => resolve(false));
@@ -191,17 +193,23 @@ function schedulePendingZoomOut() {
   setTimeout(() => {
     this.pendingZoomOutScheduled = false;
     if (this.destroyed) {
-      this.pendingZoomOut = false;
       this.pendingZoomOutResolvers
         .splice(0)
         .forEach((resolve) => resolve(false));
       return;
     }
+    if (this.viewportTransitionInProgress) {
+      // A new direct navigation won the gap between transitions. Its finalizer
+      // will resume this queue without reordering the pending requests.
+      return;
+    }
 
-    this.pendingZoomOut = false;
-    const resolvers = this.pendingZoomOutResolvers.splice(0);
+    const resolve = this.pendingZoomOutResolvers.shift();
     this.zoomOut().then((result) => {
-      resolvers.forEach((resolve) => resolve(result));
+      resolve(result);
+      // A request at the root resolves immediately and therefore has no
+      // transition finalizer to schedule the next queued request.
+      schedulePendingZoomOut.call(this);
     });
   });
 }

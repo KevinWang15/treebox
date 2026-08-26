@@ -44,7 +44,6 @@ export default class TreeBox {
   transitionTargetNode = null;
   viewportTransitionInProgress = false;
   resizePending = false;
-  pendingZoomOut = false;
   pendingZoomOutScheduled = false;
   pendingZoomOutResolvers = [];
   wheelDeltaAccumulator = 0;
