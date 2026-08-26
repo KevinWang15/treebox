@@ -33,19 +33,17 @@ export function viewportTransform({ x0, y0, x1, y1 }) {
 export function reverseViewportTransform({ x0, y0, x1, y1 }) {
   const vpw = this.viewport.x1 - this.viewport.x0;
   const vph = this.viewport.y1 - this.viewport.y0;
+  const renderedWidth =
+    this.domElementRect.width ||
+    this.canvasElement.clientWidth / this.pixelRatio;
+  const renderedHeight =
+    this.domElementRect.height ||
+    this.canvasElement.clientHeight / this.pixelRatio;
   return {
-    x0:
-      (x0 * this.pixelRatio * vpw) / this.canvasElement.clientWidth +
-      this.viewport.x0,
-    x1:
-      (x1 * this.pixelRatio * vpw) / this.canvasElement.clientWidth +
-      this.viewport.x0,
-    y0:
-      (y0 * this.pixelRatio * vph) / this.canvasElement.clientHeight +
-      this.viewport.y0,
-    y1:
-      (y1 * this.pixelRatio * vph) / this.canvasElement.clientHeight +
-      this.viewport.y0,
+    x0: (x0 * vpw) / renderedWidth + this.viewport.x0,
+    x1: (x1 * vpw) / renderedWidth + this.viewport.x0,
+    y0: (y0 * vph) / renderedHeight + this.viewport.y0,
+    y1: (y1 * vph) / renderedHeight + this.viewport.y0,
   };
 }
 

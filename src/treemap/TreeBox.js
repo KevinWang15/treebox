@@ -222,7 +222,7 @@ export default class TreeBox {
   };
 
   eventToCanvasPoint(e) {
-    this.domElementRect = this.domElement.getBoundingClientRect();
+    this.domElementRect = this.canvasElement.getBoundingClientRect();
     return {
       x: e.clientX - this.domElementRect.left,
       y: e.clientY - this.domElementRect.top,

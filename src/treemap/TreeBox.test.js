@@ -233,6 +233,34 @@ test("updates the canvas backing store when the display pixel ratio changes", ()
   host.remove();
 });
 
+test("converts pointer coordinates from the rendered canvas bounds", () => {
+  const host = document.createElement("div");
+  Object.defineProperties(host, {
+    clientWidth: { configurable: true, value: 320 },
+    clientHeight: { configurable: true, value: 180 },
+    getBoundingClientRect: {
+      configurable: true,
+      value: () => ({ left: 10, top: 20, width: 320, height: 180 }),
+    },
+  });
+  document.body.appendChild(host);
+  const treebox = new TreeBox({ data: [], domElement: host });
+  treebox.canvasElement.getBoundingClientRect = () => ({
+    left: 40,
+    top: 60,
+    width: 160,
+    height: 90,
+  });
+
+  expect(treebox.eventToCanvasPoint({ clientX: 120, clientY: 90 })).toEqual({
+    x: 80,
+    y: 30,
+  });
+
+  treebox.destroy();
+  host.remove();
+});
+
 test("makes navigation methods safe after destroy", async () => {
   const host = document.createElement("div");
   Object.defineProperties(host, {
