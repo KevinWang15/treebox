@@ -2,7 +2,9 @@
 
 ![](https://raw.githubusercontent.com/KevinWang15/treebox/master/design/logo.png)
 
-Treebox is an interactive TreeMap visualization
+Treebox is an interactive TreeMap visualization.
+
+[Try the live demo](https://kevinwang15.github.io/treebox/)
 
 - weight-aware multi-level hierarchical treemap layout
 - click on a block to zoom in / `Esc` or scroll down to zoom out
@@ -17,13 +19,16 @@ Treebox is an interactive TreeMap visualization
 - no runtime dependencies (about 8kb gzipped)
 - MIT license
 
-# DEMO
+## Demo
+
+Explore the interactive example at
+[kevinwang15.github.io/treebox](https://kevinwang15.github.io/treebox/).
 
 ![](https://raw.githubusercontent.com/KevinWang15/treebox/master/demo.png)
 
 ![](https://raw.githubusercontent.com/KevinWang15/treebox/master/demo.gif)
 
-# try it
+## Run the demo locally
 
 ```bash
 git clone https://github.com/KevinWang15/treebox
@@ -32,7 +37,7 @@ npm install
 npm start
 ```
 
-# use it
+## Install
 
 ```bash
 npm i @kevinwang15/treebox
@@ -88,8 +93,7 @@ CommonJS consumers can use
 directly in a browser exposes the same constructor as `window.treebox`.
 Legacy consumers can continue reading the constructor from `.default`.
 
-# Roadmap
+## Roadmap
 
 - more customization options
-- github.io page
 - customizable transition timing
