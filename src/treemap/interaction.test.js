@@ -43,6 +43,26 @@ test("allows normal page scrolling when there is no zoom history", () => {
   expect(context.zoomOutThrottled).not.toHaveBeenCalled();
 });
 
+test.each(["ctrlKey", "metaKey"])(
+  "allows browser zoom with the %s wheel modifier",
+  (modifier) => {
+    const context = {
+      viewportHistory: [{}],
+      viewportHistoryUndoStack: [{}],
+      zoomOutThrottled: jest.fn(),
+      undoZoomOutThrottled: jest.fn(),
+    };
+    const event = createWheelEvent(120);
+    event[modifier] = true;
+
+    onMouseWheelEventListener.call(context, event);
+
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(context.zoomOutThrottled).not.toHaveBeenCalled();
+    expect(context.undoZoomOutThrottled).not.toHaveBeenCalled();
+  }
+);
+
 test("consumes a wheel gesture when it can navigate zoom history", () => {
   const context = {
     viewportHistory: [{}],

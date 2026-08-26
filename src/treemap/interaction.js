@@ -307,6 +307,10 @@ function normalizedWheelDelta(e) {
 }
 
 export function onMouseWheelEventListener(e) {
+  if (e.ctrlKey || e.metaKey) {
+    return;
+  }
+
   if (this.isMouseDown) {
     e.preventDefault();
     return;
