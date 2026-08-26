@@ -22,3 +22,39 @@ test("supplies safe leaf weights without changing input order", () => {
     expect(item.y1).toEqual(expect.any(Number));
   }
 });
+
+test("keeps coordinates finite when valid weights overflow their sum", () => {
+  const data = [
+    { text: "huge-a", weight: Number.MAX_VALUE, children: null },
+    { text: "huge-b", weight: Number.MAX_VALUE, children: null },
+  ];
+
+  layoutLayer(data, { x0: 0, x1: 240, y0: 0, y1: 120, depth: 0 });
+
+  expect(data.map(({ x0, x1, y0, y1 }) => [x0, x1, y0, y1])).toEqual([
+    [0, 120, 0, 120],
+    [120, 240, 0, 120],
+  ]);
+});
+
+test("saturates generated parent weights instead of storing Infinity", () => {
+  const data = [
+    {
+      text: "group",
+      children: [
+        { text: "huge-a", weight: Number.MAX_VALUE, children: null },
+        { text: "huge-b", weight: Number.MAX_VALUE, children: null },
+      ],
+    },
+    { text: "peer", weight: Number.MAX_VALUE, children: null },
+  ];
+
+  layoutLayer(data, { x0: 0, x1: 240, y0: 0, y1: 120, depth: 0 });
+
+  expect(data[0].weight).toBe(Number.MAX_VALUE);
+  for (const item of [data[0], data[1], ...data[0].children]) {
+    expect([item.x0, item.x1, item.y0, item.y1].every(Number.isFinite)).toBe(
+      true
+    );
+  }
+});
