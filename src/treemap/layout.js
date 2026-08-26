@@ -1,3 +1,26 @@
+export function validateHierarchy(data, ancestors = new Set()) {
+  if (!Array.isArray(data)) {
+    throw new TypeError("Treemap layer data must be an array");
+  }
+  if (ancestors.has(data)) {
+    throw new TypeError("Treemap data must not contain cycles");
+  }
+
+  ancestors.add(data);
+  try {
+    for (const item of data) {
+      if (!item || typeof item !== "object") {
+        throw new TypeError("Treemap items must be objects");
+      }
+      if (item.children) {
+        validateHierarchy(item.children, ancestors);
+      }
+    }
+  } finally {
+    ancestors.delete(data);
+  }
+}
+
 export function layoutLayer(data, { x0, x1, y0, y1, depth }) {
   if (!Array.isArray(data)) {
     throw new TypeError("Treemap layer data must be an array");

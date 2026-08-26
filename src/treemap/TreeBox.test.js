@@ -289,3 +289,38 @@ test("makes navigation methods safe after destroy", async () => {
 
   host.remove();
 });
+
+test.each([
+  ["an invalid item", [null], "Treemap items must be objects"],
+  [
+    "a non-array child layer",
+    [{ text: "invalid", children: {} }],
+    "Treemap layer data must be an array",
+  ],
+])("rejects %s before adding canvas elements", (_name, data, message) => {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const bodyChildCount = document.body.childElementCount;
+
+  expect(() => new TreeBox({ data, domElement: host })).toThrow(message);
+  expect(host.querySelector("canvas")).toBeNull();
+  expect(document.body.childElementCount).toBe(bodyChildCount);
+
+  host.remove();
+});
+
+test("rejects cyclic data before adding canvas elements", () => {
+  const item = { text: "cycle" };
+  item.children = [item];
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const bodyChildCount = document.body.childElementCount;
+
+  expect(() => new TreeBox({ data: [item], domElement: host })).toThrow(
+    "Treemap data must not contain cycles"
+  );
+  expect(host.querySelector("canvas")).toBeNull();
+  expect(document.body.childElementCount).toBe(bodyChildCount);
+
+  host.remove();
+});

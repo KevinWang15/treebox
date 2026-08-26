@@ -13,7 +13,7 @@ import {
   onScrollEventListener,
   onWindowBlurEventListener,
 } from "./interaction";
-import { layoutLayer } from "./layout";
+import { layoutLayer, validateHierarchy } from "./layout";
 import {
   emitZoomEvent,
   repaintHoveredItem,
@@ -124,6 +124,7 @@ export default class TreeBox {
     if (!Array.isArray(data)) {
       throw new TypeError("TreeBox data must be an array");
     }
+    validateHierarchy(data);
 
     this.pixelRatio = normalizePixelRatio(pixelRatio);
     this.eventHandler = eventHandler;
