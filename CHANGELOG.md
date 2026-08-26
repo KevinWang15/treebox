@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.4 - 2026-08-26
+
 - Cull offscreen nodes, cache label layout, and avoid resetting unchanged
   canvas backing stores during repaints.
 - Cache canvas geometry per animation frame and use a spatial hit-test index
