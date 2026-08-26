@@ -1,5 +1,6 @@
 import {
   findDirectionalItem,
+  findItemAtPosition,
   onClickEventListener,
   onKeyDownEventListener,
   onLostPointerCaptureEventListener,
@@ -63,7 +64,7 @@ test.each(["ctrlKey", "metaKey"])(
     expect(event.preventDefault).not.toHaveBeenCalled();
     expect(context.zoomOutThrottled).not.toHaveBeenCalled();
     expect(context.undoZoomOutThrottled).not.toHaveBeenCalled();
-  }
+  },
 );
 
 test("consumes a wheel gesture when it can navigate zoom history", () => {
@@ -98,7 +99,7 @@ test("accumulates high-resolution wheel deltas without scrolling the page", () =
   events.forEach((event) => onMouseWheelEventListener.call(context, event));
 
   events.forEach((event) =>
-    expect(event.preventDefault).toHaveBeenCalledTimes(1)
+    expect(event.preventDefault).toHaveBeenCalledTimes(1),
   );
   expect(context.zoomOutThrottled).toHaveBeenCalledTimes(1);
 });
@@ -275,6 +276,30 @@ test("chooses keyboard targets by rendered direction", () => {
   expect(findDirectionalItem(items, topLeft, "ArrowDown")).toBe(down);
   expect(findDirectionalItem(items, right, "ArrowLeft")).toBe(topLeft);
   expect(findDirectionalItem(items, topLeft, "ArrowLeft")).toBe(topLeft);
+});
+
+test("uses a spatial index for hit testing large sibling layers", () => {
+  const items = Array.from({ length: 100 }, (_, index) => ({
+    text: String(index),
+    x0: index * 10,
+    x1: (index + 1) * 10,
+    y0: 0,
+    y1: 100,
+  }));
+  const context = {
+    activeNode: { children: items },
+    hitTestIndex: null,
+    viewportUtils: { reverseTransform: (point) => point },
+  };
+
+  expect(findItemAtPosition.call(context, { x: 555, y: 50 })).toBe(items[55]);
+  expect(context.hitTestIndex.items).toBe(items);
+  expect(
+    Math.max(...context.hitTestIndex.cells.map((cell) => cell.length)),
+  ).toBeLessThan(items.length);
+
+  // Preserve the previous first-match behavior on shared rectangle edges.
+  expect(findItemAtPosition.call(context, { x: 10, y: 50 })).toBe(items[0]);
 });
 
 test("keeps keyboard selection inside a framed viewport", () => {
@@ -576,7 +601,7 @@ test.each(["Enter", " "])(
 
     expect(event.preventDefault).toHaveBeenCalledTimes(1);
     expect(context.zoomIn).not.toHaveBeenCalled();
-  }
+  },
 );
 
 test.each(["ArrowDown", "Enter", " "])(
@@ -586,9 +611,9 @@ test.each(["ArrowDown", "Enter", " "])(
 
     onKeyDownEventListener.call(
       { isMouseDown: false, viewportTransitionInProgress: true },
-      event
+      event,
     );
 
     expect(event.preventDefault).toHaveBeenCalledTimes(1);
-  }
+  },
 );

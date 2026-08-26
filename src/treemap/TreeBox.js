@@ -58,6 +58,9 @@ export default class TreeBox {
   wheelGestureDirection = 0;
   wheelLastEventTime = 0;
   destroyed = false;
+  domElementRectFresh = false;
+  domElementRectRefreshFrame = null;
+  hitTestIndex = null;
 
   // painting the nodes
   paintLayer = paintLayer.bind(this);
@@ -158,7 +161,10 @@ export default class TreeBox {
       });
 
       if (this.rootNode.x1 > 0 && this.rootNode.y1 > 0) {
-        this.paintLayer(this.activeNode.children, { hovering: false, depth: 0 });
+        this.paintLayer(this.activeNode.children, {
+          hovering: false,
+          depth: 0,
+        });
       }
       this.addEventListeners();
       if (typeof ResizeObserver === "function") {
@@ -181,9 +187,10 @@ export default class TreeBox {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
+    this.cancelDomElementRectRefresh();
     if (this.selectionAreaElement?.parentElement) {
       this.selectionAreaElement.parentElement.removeChild(
-        this.selectionAreaElement
+        this.selectionAreaElement,
       );
     }
     if (this.canvasElement?.parentElement) {
@@ -207,10 +214,11 @@ export default class TreeBox {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
+    this.cancelDomElementRectRefresh();
     this.canvasUtils.clearAll();
     if (this.selectionAreaElement.parentElement) {
       this.selectionAreaElement.parentElement.removeChild(
-        this.selectionAreaElement
+        this.selectionAreaElement,
       );
     }
     if (this.canvasElement.parentElement) {
@@ -219,6 +227,7 @@ export default class TreeBox {
     this.domElement = null;
     this.canvasElement = null;
     this.canvas2dContext = null;
+    this.hitTestIndex = null;
     this.viewportHistory = null;
     this.viewport = null;
   }
@@ -257,29 +266,65 @@ export default class TreeBox {
   };
 
   eventToCanvasPoint(e) {
-    this.domElementRect = this.canvasElement.getBoundingClientRect();
+    this.refreshDomElementRect();
     return {
       x: e.clientX - this.domElementRect.left,
       y: e.clientY - this.domElementRect.top,
     };
   }
 
+  invalidateDomElementRect() {
+    this.domElementRectFresh = false;
+  }
+
+  refreshDomElementRect({ force = false } = {}) {
+    if (force || !this.domElementRectFresh) {
+      this.domElementRect = this.canvasElement.getBoundingClientRect();
+      this.domElementRectFresh = true;
+    }
+    if (this.domElementRectRefreshFrame === null) {
+      const expire = () => {
+        this.domElementRectRefreshFrame = null;
+        this.domElementRectFresh = false;
+      };
+      if (typeof requestAnimationFrame === "function") {
+        this.domElementRectRefreshFrame = requestAnimationFrame(expire);
+      } else {
+        this.domElementRectRefreshFrame = true;
+        Promise.resolve().then(expire);
+      }
+    }
+    return this.domElementRect;
+  }
+
+  cancelDomElementRectRefresh() {
+    if (
+      this.domElementRectRefreshFrame !== null &&
+      this.domElementRectRefreshFrame !== true &&
+      typeof cancelAnimationFrame === "function"
+    ) {
+      cancelAnimationFrame(this.domElementRectRefreshFrame);
+    }
+    this.domElementRectRefreshFrame = null;
+    this.domElementRectFresh = false;
+  }
+
   addEventListeners() {
     this.canvasElement.addEventListener(
       "pointermove",
-      this.onMouseMoveEventListener
+      this.onMouseMoveEventListener,
     );
     this.canvasElement.addEventListener(
       "pointerdown",
-      this.onMouseDownEventListener
+      this.onMouseDownEventListener,
     );
     this.canvasElement.addEventListener(
       "pointerleave",
-      this.onMouseLeaveEventListener
+      this.onMouseLeaveEventListener,
     );
     this.canvasElement.addEventListener(
       "lostpointercapture",
-      this.onLostPointerCaptureEventListener
+      this.onLostPointerCaptureEventListener,
     );
     this.canvasElement.addEventListener("blur", this.onMouseLeaveEventListener);
     window.addEventListener("blur", this.onWindowBlurEventListener);
@@ -287,12 +332,12 @@ export default class TreeBox {
     document.addEventListener("pointerup", this.onMouseUpEventListener);
     document.addEventListener(
       "pointercancel",
-      this.onPointerCancelEventListener
+      this.onPointerCancelEventListener,
     );
     this.canvasElement.addEventListener(
       "wheel",
       this.onMouseWheelEventListener,
-      this.wheelListenerOptions
+      this.wheelListenerOptions,
     );
     this.canvasElement.addEventListener("click", this.onClickEventListener);
     this.canvasElement.addEventListener("keydown", this.onKeyDownEventListener);
@@ -301,40 +346,40 @@ export default class TreeBox {
   removeEventListeners() {
     this.canvasElement.removeEventListener(
       "pointermove",
-      this.onMouseMoveEventListener
+      this.onMouseMoveEventListener,
     );
     this.canvasElement.removeEventListener(
       "pointerdown",
-      this.onMouseDownEventListener
+      this.onMouseDownEventListener,
     );
     this.canvasElement.removeEventListener(
       "pointerleave",
-      this.onMouseLeaveEventListener
+      this.onMouseLeaveEventListener,
     );
     this.canvasElement.removeEventListener(
       "lostpointercapture",
-      this.onLostPointerCaptureEventListener
+      this.onLostPointerCaptureEventListener,
     );
     this.canvasElement.removeEventListener(
       "blur",
-      this.onMouseLeaveEventListener
+      this.onMouseLeaveEventListener,
     );
     window.removeEventListener("blur", this.onWindowBlurEventListener);
     window.removeEventListener("scroll", this.onScrollEventListener, true);
     document.removeEventListener("pointerup", this.onMouseUpEventListener);
     document.removeEventListener(
       "pointercancel",
-      this.onPointerCancelEventListener
+      this.onPointerCancelEventListener,
     );
     this.canvasElement.removeEventListener(
       "wheel",
       this.onMouseWheelEventListener,
-      this.wheelListenerOptions
+      this.wheelListenerOptions,
     );
     this.canvasElement.removeEventListener("click", this.onClickEventListener);
     this.canvasElement.removeEventListener(
       "keydown",
-      this.onKeyDownEventListener
+      this.onKeyDownEventListener,
     );
   }
 
@@ -355,7 +400,7 @@ export default class TreeBox {
     canvas.setAttribute("role", "application");
     canvas.setAttribute(
       "aria-label",
-      "Interactive treemap. Tap or click a group to zoom in. With a keyboard, use the arrow keys to choose a group, Enter to zoom in, and Escape to zoom out."
+      "Interactive treemap. Tap or click a group to zoom in. With a keyboard, use the arrow keys to choose a group, Enter to zoom in, and Escape to zoom out.",
     );
     canvas.style.display = "block";
     canvas.style.width = domElement.clientWidth + "px";

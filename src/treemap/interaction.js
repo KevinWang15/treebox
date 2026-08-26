@@ -42,7 +42,7 @@ export function onMouseMove({ x, y }) {
           y0,
           x1,
           y1,
-        })
+        }),
       );
       this.selectionAreaViewPort = isUsableViewport(selectionViewport)
         ? selectionViewport
@@ -88,7 +88,17 @@ export function findDirectionalItem(items, currentItem, key) {
     return null;
   }
   if (!currentItem || !items.includes(currentItem)) {
-    return [...items].sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0)[0];
+    let firstItem = items[0];
+    for (let index = 1; index < items.length; index++) {
+      const item = items[index];
+      if (
+        item.y0 < firstItem.y0 ||
+        (item.y0 === firstItem.y0 && item.x0 < firstItem.x0)
+      ) {
+        firstItem = item;
+      }
+    }
+    return firstItem;
   }
 
   const direction = {
@@ -117,7 +127,7 @@ export function findDirectionalItem(items, currentItem, key) {
     }
 
     const crossDistance = Math.abs(
-      center[direction.crossAxis] - currentCenter[direction.crossAxis]
+      center[direction.crossAxis] - currentCenter[direction.crossAxis],
     );
     const score = primaryDistance + crossDistance * 2;
     if (score < bestScore) {
@@ -129,6 +139,88 @@ export function findDirectionalItem(items, currentItem, key) {
   return bestItem;
 }
 
+const SPATIAL_INDEX_THRESHOLD = 64;
+
+function clampCell(value, count) {
+  return Math.max(0, Math.min(count - 1, value));
+}
+
+function createHitTestIndex(items) {
+  if (items.length < SPATIAL_INDEX_THRESHOLD) {
+    return { items };
+  }
+
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  let y0 = Infinity;
+  let y1 = -Infinity;
+  for (const item of items) {
+    x0 = Math.min(x0, item.x0);
+    x1 = Math.max(x1, item.x1);
+    y0 = Math.min(y0, item.y0);
+    y1 = Math.max(y1, item.y1);
+  }
+  const width = x1 - x0;
+  const height = y1 - y0;
+  if (
+    ![x0, x1, y0, y1, width, height].every(Number.isFinite) ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return { items };
+  }
+
+  const columns = Math.max(
+    1,
+    Math.min(
+      items.length,
+      Math.round(Math.sqrt((items.length * width) / height)),
+    ),
+  );
+  const rows = Math.max(1, Math.ceil(items.length / columns));
+  const cells = Array.from({ length: columns * rows }, () => []);
+
+  const cellX = (x) =>
+    clampCell(Math.floor(((x - x0) / width) * columns), columns);
+  const cellY = (y) => clampCell(Math.floor(((y - y0) / height) * rows), rows);
+  for (const item of items) {
+    const firstColumn = cellX(item.x0);
+    const lastColumn = cellX(item.x1);
+    const firstRow = cellY(item.y0);
+    const lastRow = cellY(item.y1);
+    for (let row = firstRow; row <= lastRow; row++) {
+      for (let column = firstColumn; column <= lastColumn; column++) {
+        cells[row * columns + column].push(item);
+      }
+    }
+  }
+
+  return { cells, columns, height, items, rows, width, x0, x1, y0, y1 };
+}
+
+function hitTestCandidates(context, items, x, y) {
+  if (context.hitTestIndex?.items !== items) {
+    context.hitTestIndex = createHitTestIndex(items);
+  }
+  const index = context.hitTestIndex;
+  if (!index.cells) {
+    return items;
+  }
+  if (x < index.x0 || x > index.x1 || y < index.y0 || y > index.y1) {
+    return [];
+  }
+
+  const column = clampCell(
+    Math.floor(((x - index.x0) / index.width) * index.columns),
+    index.columns,
+  );
+  const row = clampCell(
+    Math.floor(((y - index.y0) / index.height) * index.rows),
+    index.rows,
+  );
+  return index.cells[row * index.columns + column];
+}
+
 function itemsInViewport(items, viewport) {
   if (!viewport) {
     return items;
@@ -138,7 +230,7 @@ function itemsInViewport(items, viewport) {
       item.x1 > viewport.x0 &&
       item.x0 < viewport.x1 &&
       item.y1 > viewport.y0 &&
-      item.y0 < viewport.y1
+      item.y0 < viewport.y1,
   );
 }
 
@@ -152,8 +244,9 @@ export function findItemAtPosition({ x, y }) {
 
   const tx = transformed.x0;
   const ty = transformed.y0;
-  return (this.activeNode.children || []).find(
-    (item) => item.x0 <= tx && item.x1 >= tx && item.y0 <= ty && item.y1 >= ty
+  const items = this.activeNode.children || [];
+  return hitTestCandidates(this, items, tx, ty).find(
+    (item) => item.x0 <= tx && item.x1 >= tx && item.y0 <= ty && item.y1 >= ty,
   );
 }
 
@@ -351,6 +444,9 @@ export function onScrollEventListener() {
     clientX: this.domElementRect.left + this.lastMousePos.x,
     clientY: this.domElementRect.top + this.lastMousePos.y,
   };
+  if (typeof this.invalidateDomElementRect === "function") {
+    this.invalidateDomElementRect();
+  }
   const point = this.eventToCanvasPoint(clientPoint);
 
   if (
@@ -517,11 +613,11 @@ export function onKeyDownEventListener(e) {
     e.preventDefault();
     const items = itemsInViewport(
       this.activeNode.children || [],
-      this.viewport
+      this.viewport,
     );
     updateHoveredItem.call(
       this,
-      findDirectionalItem(items, this.lastHoveringItem, e.key)
+      findDirectionalItem(items, this.lastHoveringItem, e.key),
     );
     return;
   }

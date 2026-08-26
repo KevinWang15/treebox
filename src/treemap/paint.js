@@ -253,7 +253,11 @@ function syncCanvasDimensions() {
   if (this.canvasElement.style.height !== styleHeight) {
     this.canvasElement.style.height = styleHeight;
   }
-  this.domElementRect = this.canvasElement.getBoundingClientRect();
+  if (typeof this.refreshDomElementRect === "function") {
+    this.refreshDomElementRect({ force: true });
+  } else {
+    this.domElementRect = this.canvasElement.getBoundingClientRect();
+  }
 }
 
 function scaleViewport(viewport, previousBounds, nextBounds) {
@@ -337,6 +341,7 @@ export function resize() {
 
   Object.assign(this.rootNode, nextBounds, { w: width, h: height });
   layoutLayer(this.rootNode.children, { ...nextBounds, depth: 0 });
+  this.hitTestIndex = null;
 
   const currentEntry = this.viewportHistory[this.viewportHistory.length - 1];
   Object.assign(

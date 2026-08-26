@@ -264,6 +264,50 @@ test("converts pointer coordinates from the rendered canvas bounds", () => {
   host.remove();
 });
 
+test("reads rendered canvas bounds at most once per animation frame", () => {
+  const originalRequestAnimationFrame = global.requestAnimationFrame;
+  const originalCancelAnimationFrame = global.cancelAnimationFrame;
+  let expireRect;
+  global.requestAnimationFrame = jest.fn((callback) => {
+    expireRect = callback;
+    return 42;
+  });
+  global.cancelAnimationFrame = jest.fn();
+  const host = document.createElement("div");
+  Object.defineProperties(host, {
+    clientWidth: { configurable: true, value: 320 },
+    clientHeight: { configurable: true, value: 180 },
+    getBoundingClientRect: {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width: 320, height: 180 }),
+    },
+  });
+  document.body.appendChild(host);
+  const treebox = new TreeBox({ data: [], domElement: host });
+  const getBoundingClientRect = jest.fn(() => ({
+    left: 40,
+    top: 60,
+    width: 160,
+    height: 90,
+  }));
+  treebox.canvasElement.getBoundingClientRect = getBoundingClientRect;
+
+  try {
+    treebox.eventToCanvasPoint({ clientX: 120, clientY: 90 });
+    treebox.eventToCanvasPoint({ clientX: 130, clientY: 100 });
+
+    expect(getBoundingClientRect).toHaveBeenCalledTimes(1);
+    expireRect();
+    treebox.eventToCanvasPoint({ clientX: 140, clientY: 110 });
+    expect(getBoundingClientRect).toHaveBeenCalledTimes(2);
+  } finally {
+    treebox.destroy();
+    host.remove();
+    global.requestAnimationFrame = originalRequestAnimationFrame;
+    global.cancelAnimationFrame = originalCancelAnimationFrame;
+  }
+});
+
 test("makes navigation methods safe after destroy", async () => {
   const host = document.createElement("div");
   Object.defineProperties(host, {
@@ -320,7 +364,7 @@ test("rejects a non-function event handler before adding canvas elements", () =>
         data: [],
         domElement: host,
         eventHandler: "not callable",
-      })
+      }),
   ).toThrow("TreeBox eventHandler must be a function");
   expect(host.querySelector("canvas")).toBeNull();
   expect(document.body.childElementCount).toBe(bodyChildCount);
@@ -336,7 +380,7 @@ test("rejects cyclic data before adding canvas elements", () => {
   const bodyChildCount = document.body.childElementCount;
 
   expect(() => new TreeBox({ data: [item], domElement: host })).toThrow(
-    "Treemap data must not contain cycles"
+    "Treemap data must not contain cycles",
   );
   expect(host.querySelector("canvas")).toBeNull();
   expect(document.body.childElementCount).toBe(bodyChildCount);
@@ -351,7 +395,7 @@ test("rejects reused item objects before adding canvas elements", () => {
   const bodyChildCount = document.body.childElementCount;
 
   expect(
-    () => new TreeBox({ data: [shared, shared], domElement: host })
+    () => new TreeBox({ data: [shared, shared], domElement: host }),
   ).toThrow("Treemap data must not reuse item objects");
   expect(host.querySelector("canvas")).toBeNull();
   expect(document.body.childElementCount).toBe(bodyChildCount);
@@ -398,7 +442,7 @@ test("cleans up when resize observation fails after listeners are added", () => 
         new TreeBox({
           data: [{ text: "valid", weight: 1, children: null }],
           domElement: host,
-        })
+        }),
     ).toThrow("observer setup failed");
     expect(disconnect).toHaveBeenCalledTimes(1);
     expect(host.querySelector("canvas")).toBeNull();
