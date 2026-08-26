@@ -129,38 +129,67 @@ export default class TreeBox {
     this.pixelRatio = normalizePixelRatio(pixelRatio);
     this.eventHandler = eventHandler;
     this.domElement = domElement;
-    this.canvasElement = this.createCanvasElement(domElement);
-    this.selectionAreaElement = this.createSelectionAreaElement();
+    try {
+      this.canvasElement = this.createCanvasElement(domElement);
+      this.selectionAreaElement = this.createSelectionAreaElement();
 
-    this.rootNode = {
-      children: data,
-      x0: 0,
-      y0: 0,
-      x1: this.domElement.clientWidth,
-      y1: this.domElement.clientHeight,
-    };
-    this.activeNode = this.rootNode;
-    this.canvas2dContext = this.canvasElement.getContext("2d");
+      this.rootNode = {
+        children: data,
+        x0: 0,
+        y0: 0,
+        x1: this.domElement.clientWidth,
+        y1: this.domElement.clientHeight,
+      };
+      this.activeNode = this.rootNode;
+      this.canvas2dContext = this.canvasElement.getContext("2d");
 
-    Object.assign(this.viewport, {
-      x0: 0,
-      y0: 0,
-      x1: this.domElement.clientWidth,
-      y1: this.domElement.clientHeight,
-    });
-    layoutLayer(this.activeNode.children, {
-      ...this.viewport,
-      depth: 0,
-    });
+      Object.assign(this.viewport, {
+        x0: 0,
+        y0: 0,
+        x1: this.domElement.clientWidth,
+        y1: this.domElement.clientHeight,
+      });
+      layoutLayer(this.activeNode.children, {
+        ...this.viewport,
+        depth: 0,
+      });
 
-    if (this.rootNode.x1 > 0 && this.rootNode.y1 > 0) {
-      this.paintLayer(this.activeNode.children, { hovering: false, depth: 0 });
+      if (this.rootNode.x1 > 0 && this.rootNode.y1 > 0) {
+        this.paintLayer(this.activeNode.children, { hovering: false, depth: 0 });
+      }
+      this.addEventListeners();
+      if (typeof ResizeObserver === "function") {
+        this.resizeObserver = new ResizeObserver(() => this.repaint());
+        this.resizeObserver.observe(this.domElement);
+      }
+    } catch (error) {
+      this.cleanupFailedConstruction();
+      throw error;
     }
-    this.addEventListeners();
-    if (typeof ResizeObserver === "function") {
-      this.resizeObserver = new ResizeObserver(() => this.repaint());
-      this.resizeObserver.observe(this.domElement);
+  }
+
+  cleanupFailedConstruction() {
+    this.destroyed = true;
+    if (this.canvasElement) {
+      this.removeEventListeners();
     }
+    this.zoomOutThrottled.cancel();
+    this.undoZoomOutThrottled.cancel();
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
+    if (this.selectionAreaElement?.parentElement) {
+      this.selectionAreaElement.parentElement.removeChild(
+        this.selectionAreaElement
+      );
+    }
+    if (this.canvasElement?.parentElement) {
+      this.canvasElement.parentElement.removeChild(this.canvasElement);
+    }
+    this.domElement = null;
+    this.canvasElement = null;
+    this.selectionAreaElement = null;
+    this.canvas2dContext = null;
   }
 
   destroy() {

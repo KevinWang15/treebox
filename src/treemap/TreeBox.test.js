@@ -324,3 +324,53 @@ test("rejects cyclic data before adding canvas elements", () => {
 
   host.remove();
 });
+
+test("cleans up DOM elements when layout fails after construction starts", () => {
+  const item = Object.freeze({
+    text: "frozen",
+    weight: 1,
+    children: null,
+  });
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const bodyChildCount = document.body.childElementCount;
+
+  expect(() => new TreeBox({ data: [item], domElement: host })).toThrow();
+  expect(host.querySelector("canvas")).toBeNull();
+  expect(document.body.childElementCount).toBe(bodyChildCount);
+
+  host.remove();
+});
+
+test("cleans up when resize observation fails after listeners are added", () => {
+  const OriginalResizeObserver = global.ResizeObserver;
+  const disconnect = jest.fn();
+  global.ResizeObserver = class {
+    observe() {
+      throw new Error("observer setup failed");
+    }
+
+    disconnect() {
+      disconnect();
+    }
+  };
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const bodyChildCount = document.body.childElementCount;
+
+  try {
+    expect(
+      () =>
+        new TreeBox({
+          data: [{ text: "valid", weight: 1, children: null }],
+          domElement: host,
+        })
+    ).toThrow("observer setup failed");
+    expect(disconnect).toHaveBeenCalledTimes(1);
+    expect(host.querySelector("canvas")).toBeNull();
+    expect(document.body.childElementCount).toBe(bodyChildCount);
+  } finally {
+    global.ResizeObserver = OriginalResizeObserver;
+    host.remove();
+  }
+});
