@@ -41,6 +41,94 @@ test("ignores direct transitions to degenerate viewports", async () => {
   expect(context.viewportTransitionInProgress).toBe(false);
 });
 
+test("finishes a transition immediately when the document is hidden", async () => {
+  const originalHidden = Object.getOwnPropertyDescriptor(document, "hidden");
+  const originalAnimationFrame = global.requestAnimationFrame;
+  global.requestAnimationFrame = jest.fn();
+  Object.defineProperty(document, "hidden", {
+    configurable: true,
+    value: true,
+  });
+  const context = {
+    activeNode: { children: [] },
+    canvasUtils: { clearAll: jest.fn() },
+    destroyed: false,
+    paintLayer: jest.fn(),
+    pendingNavigationQueue: [],
+    pendingNavigationScheduled: false,
+    resizePending: false,
+    viewport: { x0: 0, x1: 100, y0: 0, y1: 100 },
+    viewportTransitionInProgress: false,
+  };
+  const target = { x0: 20, x1: 80, y0: 10, y1: 90 };
+
+  try {
+    await expect(transitionTo.call(context, target)).resolves.toBe(true);
+
+    expect(context.viewport).toEqual(target);
+    expect(context.paintLayer).toHaveBeenCalledWith([], {
+      hovering: false,
+      transitionProgress: 1,
+      depth: 0,
+    });
+    expect(global.requestAnimationFrame).not.toHaveBeenCalled();
+    expect(context.viewportTransitionInProgress).toBe(false);
+  } finally {
+    global.requestAnimationFrame = originalAnimationFrame;
+    if (originalHidden) {
+      Object.defineProperty(document, "hidden", originalHidden);
+    } else {
+      delete document.hidden;
+    }
+  }
+});
+
+test("finishes an active transition when the document becomes hidden", async () => {
+  const originalHidden = Object.getOwnPropertyDescriptor(document, "hidden");
+  const originalAnimationFrame = global.requestAnimationFrame;
+  const originalCancelAnimationFrame = global.cancelAnimationFrame;
+  global.requestAnimationFrame = jest.fn(() => 42);
+  global.cancelAnimationFrame = jest.fn();
+  Object.defineProperty(document, "hidden", {
+    configurable: true,
+    value: false,
+    writable: true,
+  });
+  const context = {
+    activeNode: { children: [] },
+    canvasUtils: { clearAll: jest.fn() },
+    destroyed: false,
+    paintLayer: jest.fn(),
+    pendingNavigationQueue: [],
+    pendingNavigationScheduled: false,
+    resizePending: false,
+    viewport: { x0: 0, x1: 100, y0: 0, y1: 100 },
+    viewportTransitionInProgress: false,
+  };
+  const target = { x0: 20, x1: 80, y0: 10, y1: 90 };
+
+  try {
+    const transition = transitionTo.call(context, target);
+    expect(context.viewportTransitionInProgress).toBe(true);
+
+    document.hidden = true;
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    await expect(transition).resolves.toBe(true);
+    expect(context.viewport).toEqual(target);
+    expect(global.cancelAnimationFrame).toHaveBeenCalledWith(42);
+    expect(context.viewportTransitionInProgress).toBe(false);
+  } finally {
+    global.requestAnimationFrame = originalAnimationFrame;
+    global.cancelAnimationFrame = originalCancelAnimationFrame;
+    if (originalHidden) {
+      Object.defineProperty(document, "hidden", originalHidden);
+    } else {
+      delete document.hidden;
+    }
+  }
+});
+
 test("honors a zoom-out requested during a zoom-in transition", async () => {
   const animationFrames = [];
   const originalAnimationFrame = global.requestAnimationFrame;

@@ -19,19 +19,23 @@ export function transitionTo(viewport) {
         ? 0
         : 200;
     const pristineViewport = { ...this.viewport };
+    let animationFrameId = null;
+    let settled = false;
 
-    let onAnimationFrame = () => {
-      if (this.destroyed) {
-        resolve();
+    const settle = (result) => {
+      if (settled) {
         return;
       }
-
-      let progress = transitionLength
-        ? (+new Date() - transitionStart) / transitionLength
-        : 1;
-      if (progress > 1) {
-        progress = 1;
+      settled = true;
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
       }
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      resolve(result);
+    };
+
+    const paintFrame = (progress) => {
       Object.assign(
         this.viewport,
         calcTransitioningViewport(pristineViewport, viewport, progress)
@@ -42,14 +46,51 @@ export function transitionTo(viewport) {
         transitionProgress: progress,
         depth: 0,
       });
+    };
+
+    const finish = () => {
+      if (this.destroyed) {
+        settle(false);
+        return;
+      }
+      paintFrame(1);
+      settle(true);
+    };
+
+    const onAnimationFrame = () => {
+      animationFrameId = null;
+      if (this.destroyed) {
+        settle(false);
+        return;
+      }
+
+      const progress = Math.min(
+        transitionLength
+          ? (+new Date() - transitionStart) / transitionLength
+          : 1,
+        1
+      );
+      paintFrame(progress);
 
       if (progress < 1) {
-        requestAnimationFrame(onAnimationFrame);
+        animationFrameId = requestAnimationFrame(onAnimationFrame);
       } else {
-        resolve();
+        settle(true);
       }
     };
-    requestAnimationFrame(onAnimationFrame);
+
+    function onVisibilityChange() {
+      if (document.hidden) {
+        finish();
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    if (document.hidden) {
+      finish();
+    } else {
+      animationFrameId = requestAnimationFrame(onAnimationFrame);
+    }
   }).finally(() => {
     this.viewportTransitionInProgress = false;
     if (this.resizePending && !this.destroyed) {
