@@ -411,6 +411,28 @@ test("ignores Escape auto-repeat so one held key steps out once", () => {
   expect(context.zoomOut).not.toHaveBeenCalled();
 });
 
+test.each([
+  ["Alt+Left", { key: "ArrowLeft", altKey: true }],
+  ["Control+Enter", { key: "Enter", ctrlKey: true }],
+  ["Meta+Right", { key: "ArrowRight", metaKey: true }],
+  ["Shift+Escape", { key: "Escape", shiftKey: true }],
+])("leaves the %s platform shortcut to the browser", (_name, shortcut) => {
+  const context = {
+    activeNode: { children: [{ children: [{}] }] },
+    isMouseDown: false,
+    viewportTransitionInProgress: false,
+    zoomIn: jest.fn(),
+    zoomOut: jest.fn(),
+  };
+  const event = { ...shortcut, preventDefault: jest.fn(), repeat: false };
+
+  onKeyDownEventListener.call(context, event);
+
+  expect(event.preventDefault).not.toHaveBeenCalled();
+  expect(context.zoomIn).not.toHaveBeenCalled();
+  expect(context.zoomOut).not.toHaveBeenCalled();
+});
+
 test.each(["Enter", " "])("ignores a repeated %p activation keydown", (key) => {
   const context = {
     isMouseDown: false,

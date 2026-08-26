@@ -409,6 +409,15 @@ export function onMouseLeaveEventListener() {
 }
 
 export function onKeyDownEventListener(e) {
+  if (
+    e.altKey ||
+    e.ctrlKey ||
+    e.metaKey ||
+    (e.shiftKey && e.key === "Escape")
+  ) {
+    return;
+  }
+
   if (e.key === "Escape") {
     e.preventDefault();
     if (e.repeat) {
