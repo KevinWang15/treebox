@@ -309,6 +309,25 @@ test.each([
   host.remove();
 });
 
+test("rejects a non-function event handler before adding canvas elements", () => {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const bodyChildCount = document.body.childElementCount;
+
+  expect(
+    () =>
+      new TreeBox({
+        data: [],
+        domElement: host,
+        eventHandler: "not callable",
+      })
+  ).toThrow("TreeBox eventHandler must be a function");
+  expect(host.querySelector("canvas")).toBeNull();
+  expect(document.body.childElementCount).toBe(bodyChildCount);
+
+  host.remove();
+});
+
 test("rejects cyclic data before adding canvas elements", () => {
   const item = { text: "cycle" };
   item.children = [item];

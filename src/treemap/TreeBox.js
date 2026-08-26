@@ -124,6 +124,9 @@ export default class TreeBox {
     if (!Array.isArray(data)) {
       throw new TypeError("TreeBox data must be an array");
     }
+    if (eventHandler != null && typeof eventHandler !== "function") {
+      throw new TypeError("TreeBox eventHandler must be a function");
+    }
     validateHierarchy(data);
 
     this.pixelRatio = normalizePixelRatio(pixelRatio);
