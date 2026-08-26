@@ -295,3 +295,17 @@ test.each(["Enter", " "])("ignores a repeated %p activation keydown", (key) => {
   expect(event.preventDefault).toHaveBeenCalledTimes(1);
   expect(context.zoomIn).not.toHaveBeenCalled();
 });
+
+test.each(["ArrowDown", "Enter", " "])(
+  "consumes %p while a viewport transition is active",
+  (key) => {
+    const event = { key, repeat: false, preventDefault: jest.fn() };
+
+    onKeyDownEventListener.call(
+      { isMouseDown: false, viewportTransitionInProgress: true },
+      event
+    );
+
+    expect(event.preventDefault).toHaveBeenCalledTimes(1);
+  }
+);

@@ -402,6 +402,9 @@ export function onKeyDownEventListener(e) {
   }
 
   if (this.viewportTransitionInProgress) {
+    if (e.key === "Enter" || e.key === " " || e.key.slice(0, 5) === "Arrow") {
+      e.preventDefault();
+    }
     return;
   }
 
