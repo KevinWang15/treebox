@@ -367,6 +367,9 @@ export function onMouseLeaveEventListener() {
 export function onKeyDownEventListener(e) {
   if (e.key === "Escape") {
     e.preventDefault();
+    if (e.repeat) {
+      return;
+    }
     if (this.isMouseDown) {
       onPointerCancelEventListener.call(this, {
         pointerId: this.activePointerId,

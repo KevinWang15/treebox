@@ -277,6 +277,19 @@ test("cancels an active selection when Escape is pressed", () => {
   expect(context.canvasElement.releasePointerCapture).toHaveBeenCalledWith(7);
 });
 
+test("ignores Escape auto-repeat so one held key steps out once", () => {
+  const context = {
+    isMouseDown: false,
+    zoomOut: jest.fn(),
+  };
+  const event = { key: "Escape", repeat: true, preventDefault: jest.fn() };
+
+  onKeyDownEventListener.call(context, event);
+
+  expect(event.preventDefault).toHaveBeenCalledTimes(1);
+  expect(context.zoomOut).not.toHaveBeenCalled();
+});
+
 test.each(["Enter", " "])("ignores a repeated %p activation keydown", (key) => {
   const context = {
     isMouseDown: false,
