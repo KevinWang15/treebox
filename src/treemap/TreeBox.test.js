@@ -70,6 +70,50 @@ test("reflows item layout when repaint sees a new container aspect ratio", () =>
   host.remove();
 });
 
+test("cancels an active selection when the container size changes", () => {
+  let width = 600;
+  let height = 300;
+  const host = document.createElement("div");
+  Object.defineProperties(host, {
+    clientWidth: { configurable: true, get: () => width },
+    clientHeight: { configurable: true, get: () => height },
+    getBoundingClientRect: {
+      configurable: true,
+      value: () => ({ left: 0, top: 0, width, height }),
+    },
+  });
+  document.body.appendChild(host);
+  const group = {
+    text: "group",
+    children: [{ text: "leaf", weight: 1, children: null }],
+  };
+  const treebox = new TreeBox({ data: [group], domElement: host });
+  treebox.isMouseDown = true;
+  treebox.activePointerId = 7;
+  treebox.lastMouseDownPos = { x: 100, y: 100 };
+  treebox.selectionAreaViewPort = { x0: 100, x1: 300, y0: 100, y1: 200 };
+  treebox.selectionAreaWasTriggered = true;
+  treebox.selectionAreaElement.style.display = "block";
+
+  width = 300;
+  height = 600;
+  treebox.repaint();
+
+  expect(treebox.isMouseDown).toBe(false);
+  expect(treebox.activePointerId).toBeUndefined();
+  expect(treebox.lastMouseDownPos).toBeNull();
+  expect(treebox.selectionAreaViewPort).toBeNull();
+  expect(treebox.selectionAreaElement.style.display).toBe("none");
+  expect(treebox.selectionAreaWasTriggered).toBe(true);
+
+  treebox.onClickEventListener({ detail: 1, clientX: 150, clientY: 300 });
+  expect(treebox.selectionAreaWasTriggered).toBe(false);
+  expect(treebox.viewportHistory).toHaveLength(0);
+
+  treebox.destroy();
+  host.remove();
+});
+
 test("keeps the viewport coordinate-only while resizing a node view", () => {
   let width = 600;
   let height = 300;

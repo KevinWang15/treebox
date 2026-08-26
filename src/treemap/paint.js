@@ -195,6 +195,15 @@ export function resize() {
   };
   const nextBounds = { x0: 0, x1: width, y0: 0, y1: height };
 
+  const sizeChanged =
+    previousBounds.x1 !== nextBounds.x1 || previousBounds.y1 !== nextBounds.y1;
+  if (sizeChanged && this.isMouseDown) {
+    this.onPointerCancelEventListener({ pointerId: this.activePointerId });
+    // The physical release can still synthesize a click even though TreeBox
+    // canceled its stale coordinates. Consume that click instead of zooming.
+    this.selectionAreaWasTriggered = true;
+  }
+
   if (width <= 0 || height <= 0) {
     syncCanvasDimensions.call(this);
     return false;
