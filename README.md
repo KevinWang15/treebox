@@ -86,6 +86,7 @@ function destroyTreebox() {
 CommonJS consumers can use
 `const TreeBox = require("@kevinwang15/treebox")`. Loading `treebox.js`
 directly in a browser exposes the same constructor as `window.treebox`.
+Legacy consumers can continue reading the constructor from `.default`.
 
 # Roadmap
 
