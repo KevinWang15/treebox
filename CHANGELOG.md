@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.1.5 - 2026-08-26
+
+- Queue a stationary click made during a zoom transition and replay it against
+  the next level after the animation settles.
+
 ## 0.1.4 - 2026-08-26
 
 - Allow consecutive stationary clicks to keep zooming after each transition

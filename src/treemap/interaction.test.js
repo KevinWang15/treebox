@@ -1,6 +1,7 @@
 import {
   findDirectionalItem,
   findItemAtPosition,
+  flushPendingClick,
   onClickEventListener,
   onKeyDownEventListener,
   onLostPointerCaptureEventListener,
@@ -41,19 +42,48 @@ test("accepts a consecutive click after the previous transition settles", () => 
   expect(context.zoomIn).toHaveBeenCalledWith(target);
 });
 
-test("ignores a repeated click while the previous transition is active", () => {
+test("queues a repeated click while the previous transition is active", () => {
   const context = {
     selectionAreaWasTriggered: false,
     viewportTransitionInProgress: true,
     transitionTargetNode: {},
-    eventToCanvasPoint: jest.fn(),
+    eventToCanvasPoint: jest.fn(() => ({ x: 10, y: 20 })),
+    pendingClickPoint: null,
     zoomIn: jest.fn(),
   };
 
   onClickEventListener.call(context, { detail: 2 });
 
-  expect(context.eventToCanvasPoint).not.toHaveBeenCalled();
+  expect(context.eventToCanvasPoint).toHaveBeenCalledTimes(1);
+  expect(context.pendingClickPoint).toEqual({ x: 10, y: 20 });
   expect(context.zoomIn).not.toHaveBeenCalled();
+});
+
+test("replays one pending click against the settled active layer", async () => {
+  const target = {
+    children: [{}],
+    x0: 0,
+    x1: 20,
+    y0: 0,
+    y1: 20,
+  };
+  const context = {
+    activeNode: { children: [target] },
+    destroyed: false,
+    pendingClickPoint: { x: 10, y: 10 },
+    pendingClickTimer: null,
+    transitionTargetNode: null,
+    viewportTransitionInProgress: false,
+    viewportUtils: { reverseTransform: (point) => point },
+    zoomIn: jest.fn(),
+  };
+
+  flushPendingClick.call(context);
+  await new Promise((resolve) => setTimeout(resolve));
+
+  expect(context.pendingClickPoint).toBeNull();
+  expect(context.pendingClickTimer).toBeNull();
+  expect(context.zoomIn).toHaveBeenCalledWith(target);
 });
 
 test("allows normal page scrolling when there is no zoom history", () => {

@@ -38,7 +38,7 @@ export function transitionTo(viewport) {
     const paintFrame = (progress) => {
       Object.assign(
         this.viewport,
-        calcTransitioningViewport(pristineViewport, viewport, progress)
+        calcTransitioningViewport(pristineViewport, viewport, progress),
       );
       this.canvasUtils.clearAll();
       this.paintLayer(this.activeNode.children, {
@@ -68,7 +68,7 @@ export function transitionTo(viewport) {
         transitionLength
           ? (+new Date() - transitionStart) / transitionLength
           : 1,
-        1
+        1,
       );
       paintFrame(progress);
 
@@ -98,6 +98,7 @@ export function transitionTo(viewport) {
       this.resize();
     }
     schedulePendingNavigation.call(this);
+    this.flushPendingClick?.();
   });
 }
 

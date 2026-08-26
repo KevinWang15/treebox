@@ -2,6 +2,7 @@ import { reverseViewportTransform, viewportTransform } from "./viewport";
 import { clearAll, clearRect, fillRect, fillText } from "./canvas";
 import {
   onClickEventListener,
+  flushPendingClick,
   onKeyDownEventListener,
   onLostPointerCaptureEventListener,
   onMouseDownEventListener,
@@ -61,6 +62,8 @@ export default class TreeBox {
   domElementRectFresh = false;
   domElementRectRefreshFrame = null;
   hitTestIndex = null;
+  pendingClickPoint = null;
+  pendingClickTimer = null;
 
   // painting the nodes
   paintLayer = paintLayer.bind(this);
@@ -71,6 +74,7 @@ export default class TreeBox {
   // interactions
   onMouseMove = onMouseMove.bind(this);
   onClickEventListener = onClickEventListener.bind(this);
+  flushPendingClick = flushPendingClick.bind(this);
   onKeyDownEventListener = onKeyDownEventListener.bind(this);
   onLostPointerCaptureEventListener =
     onLostPointerCaptureEventListener.bind(this);
@@ -179,6 +183,7 @@ export default class TreeBox {
 
   cleanupFailedConstruction() {
     this.destroyed = true;
+    this.cancelPendingClick();
     if (this.canvasElement) {
       this.removeEventListeners();
     }
@@ -208,6 +213,7 @@ export default class TreeBox {
     }
 
     this.destroyed = true;
+    this.cancelPendingClick();
     this.removeEventListeners();
     this.zoomOutThrottled.cancel();
     this.undoZoomOutThrottled.cancel();
@@ -307,6 +313,14 @@ export default class TreeBox {
     }
     this.domElementRectRefreshFrame = null;
     this.domElementRectFresh = false;
+  }
+
+  cancelPendingClick() {
+    if (this.pendingClickTimer !== null) {
+      clearTimeout(this.pendingClickTimer);
+    }
+    this.pendingClickTimer = null;
+    this.pendingClickPoint = null;
   }
 
   addEventListeners() {

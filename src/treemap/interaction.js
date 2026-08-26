@@ -250,24 +250,62 @@ export function findItemAtPosition({ x, y }) {
   );
 }
 
+function zoomAtCanvasPoint(point) {
+  const target = findItemAtPosition.call(this, point);
+  if (!target || !target.children || !target.children.length) {
+    return false;
+  }
+
+  this.zoomIn(target);
+  return true;
+}
+
+export function flushPendingClick() {
+  if (
+    !this.pendingClickPoint ||
+    this.pendingClickTimer !== null ||
+    this.destroyed
+  ) {
+    if (this.destroyed) {
+      this.pendingClickPoint = null;
+    }
+    return;
+  }
+
+  this.pendingClickTimer = setTimeout(() => {
+    this.pendingClickTimer = null;
+    if (
+      this.destroyed ||
+      this.viewportTransitionInProgress ||
+      this.transitionTargetNode
+    ) {
+      if (this.destroyed) {
+        this.pendingClickPoint = null;
+      }
+      return;
+    }
+
+    const point = this.pendingClickPoint;
+    this.pendingClickPoint = null;
+    zoomAtCanvasPoint.call(this, point);
+  });
+}
+
 export function onClickEventListener(e) {
   if (this.selectionAreaWasTriggered) {
     this.selectionAreaWasTriggered = false;
     return;
   }
   if (this.viewportTransitionInProgress) {
+    this.pendingClickPoint = this.eventToCanvasPoint(e);
     return;
   }
   if (this.transitionTargetNode) {
+    this.pendingClickPoint = this.eventToCanvasPoint(e);
     return;
   }
 
-  const target = findItemAtPosition.call(this, this.eventToCanvasPoint(e));
-  if (!target || !target.children || !target.children.length) {
-    return;
-  }
-
-  this.zoomIn(target);
+  zoomAtCanvasPoint.call(this, this.eventToCanvasPoint(e));
 }
 
 export function onMouseDownEventListener(e) {
