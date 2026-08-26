@@ -32,6 +32,7 @@
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.16em;
+  overflow-wrap: anywhere;
   text-transform: uppercase;
 }
 
@@ -48,6 +49,7 @@
   font-weight: 620;
   letter-spacing: -0.065em;
   line-height: 0.88;
+  overflow-wrap: anywhere;
 }
 
 .hero-copy {
@@ -56,6 +58,7 @@
   color: var(--muted);
   font-size: clamp(1rem, 1.6vw, 1.3rem);
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .chart-card {
@@ -97,7 +100,9 @@
 .chart-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 20px;
+  justify-content: flex-end;
 }
 
 .hover-status {
@@ -193,7 +198,7 @@ kbd {
 
 @media (max-width: 760px) {
   .hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero .eyebrow {
@@ -208,6 +213,7 @@ kbd {
   .chart-actions {
     flex-direction: column-reverse;
     gap: 8px;
+    justify-content: flex-start;
   }
 
   .hover-status {
