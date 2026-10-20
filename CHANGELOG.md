@@ -2,9 +2,13 @@
 
 ## Unreleased
 
+## 0.2.0 - 2026-10-20
+
 - Add a `style` option and `setStyle()` for gaps, corner radius, label font,
   size range, color, outline, alignment and padding, and hover appearance.
-  The defaults keep the previous look. `BOX_MARGIN` is replaced by `gap`.
+  The defaults keep the previous look.
+- Breaking: the `BOX_MARGIN` field is replaced by `style.gap`. The default gap
+  of 2 matches the old margin of 1 on each side.
 - Add an `open` event, fired by Ctrl/Cmd-click or Shift+Enter on a block,
   for opening a detail view without zooming.
 
