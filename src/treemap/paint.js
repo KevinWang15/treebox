@@ -1,4 +1,5 @@
 import { layoutLayer } from "./layout";
+import { resolveTextColor, styleOf } from "./style";
 
 export function clearRectAndPaintLayer(e, p) {
   this.canvasUtils.clearRect(e.x0, e.y0, e.x1 - e.x0, e.y1 - e.y0);
@@ -153,19 +154,21 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
       });
     }
 
+    const style = styleOf(this);
     const fontSizeCss = Math.min(
       Math.round((bounds.x1 - bounds.x0) / this.pixelRatio / 10),
       Math.round((bounds.y1 - bounds.y0) / this.pixelRatio / 3),
-      160,
+      style.maxFontSize,
     );
     const fontSize = fontSizeCss * this.pixelRatio;
+    const textArgs = { ctx: this.canvas2dContext, hovering, item, bounds };
 
     const doPaintNode = () => {
       try {
         if (hovering) {
           this.canvas2dContext.save();
-          this.canvas2dContext.filter = "brightness(110%) saturate(120%)";
-          this.canvas2dContext.globalAlpha = 0.6;
+          this.canvas2dContext.filter = style.hoverFilter;
+          this.canvas2dContext.globalAlpha = style.hoverOpacity;
         }
         this.canvasUtils.fillRect(
           item.x0,
@@ -185,7 +188,13 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
       }
 
       if (depth <= 2) {
-        this.canvasUtils.fillText(item.text, bounds, fontSize, "white", item);
+        this.canvasUtils.fillText(
+          item.text,
+          bounds,
+          fontSize,
+          resolveTextColor(this, textArgs),
+          item,
+        );
       }
     };
 
@@ -212,7 +221,7 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
             item.text,
             bounds,
             fontSize,
-            "#FFFFFF",
+            resolveTextColor(this, textArgs),
             item,
           );
         }

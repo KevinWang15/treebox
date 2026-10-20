@@ -1,3 +1,4 @@
+import { labelFont, styleOf } from "./style";
 import { viewportTransform } from "./viewport";
 
 function measureTextWidth(context, text) {
@@ -56,7 +57,7 @@ function createTextLayout(context, text, maxWidth, height, fontSize) {
   return lines;
 }
 
-function getTextLayout(context, item, text, maxWidth, height, fontSize) {
+function getTextLayout(context, item, text, maxWidth, height, fontSize, font) {
   if (!item || (typeof item !== "object" && typeof item !== "function")) {
     return createTextLayout(
       context.canvas2dContext,
@@ -70,13 +71,15 @@ function getTextLayout(context, item, text, maxWidth, height, fontSize) {
   if (!context.textLayoutCache) {
     context.textLayoutCache = new WeakMap();
   }
+  // The font is part of the key: the same text wraps differently in another face.
   const cached = context.textLayoutCache.get(item);
   if (
     cached &&
     cached.text === text &&
     cached.maxWidth === maxWidth &&
     cached.height === height &&
-    cached.fontSize === fontSize
+    cached.fontSize === fontSize &&
+    cached.font === font
   ) {
     return cached.lines;
   }
@@ -93,47 +96,52 @@ function getTextLayout(context, item, text, maxWidth, height, fontSize) {
     maxWidth,
     height,
     fontSize,
+    font,
     lines: layout,
   });
   return layout;
 }
 
 export function fillText(text, bounds, fontSize, fillStyle = "white", item) {
-  const margin = this.BOX_MARGIN * this.pixelRatio;
-  const width = bounds.x1 - bounds.x0 - margin * 2;
-  const height = bounds.y1 - bounds.y0 - margin * 2;
+  const style = styleOf(this);
+  const inset = (style.gap / 2) * this.pixelRatio;
+  const padding = style.textPadding * this.pixelRatio;
+  const x0 = bounds.x0 + inset + padding;
+  const y0 = bounds.y0 + inset + padding;
+  const width = bounds.x1 - bounds.x0 - (inset + padding) * 2;
+  const height = bounds.y1 - bounds.y0 - (inset + padding) * 2;
   if (
     text === null ||
     text === undefined ||
     String(text).length === 0 ||
     width <= 0 ||
     height <= 0 ||
-    fontSize < 6 * this.pixelRatio
+    fontSize < style.minFontSize * this.pixelRatio
   ) {
     return;
   }
 
   this.canvas2dContext.save();
   this.canvas2dContext.beginPath();
-  this.canvas2dContext.rect(
-    bounds.x0 + margin,
-    bounds.y0 + margin,
-    width,
-    height,
-  );
+  this.canvas2dContext.rect(x0, y0, width, height);
   this.canvas2dContext.clip();
 
-  this.canvas2dContext.font = fontSize + "px sans-serif";
+  const font = labelFont(style, fontSize);
+  this.canvas2dContext.font = font;
   this.canvas2dContext.fillStyle = fillStyle;
   this.canvas2dContext.lineJoin = "round";
   this.canvas2dContext.lineWidth = Math.max(this.pixelRatio, fontSize * 0.06);
-  this.canvas2dContext.strokeStyle = "rgba(9, 14, 25, 0.84)";
-  this.canvas2dContext.textAlign = "center";
+  if (style.textStroke) {
+    this.canvas2dContext.strokeStyle = style.textStroke;
+  }
+  const start = style.textAlign === "start";
+  // "start" follows the canvas direction, so it means right-aligned in RTL.
+  const rtl = start && this.canvas2dContext.direction === "rtl";
+  this.canvas2dContext.textAlign = start ? "start" : "center";
   this.canvas2dContext.textBaseline = "middle";
 
   const maxWidth = width;
-  const centerX = (bounds.x0 + bounds.x1) / 2;
-  const centerY = (bounds.y0 + bounds.y1) / 2;
+  const anchorX = start ? (rtl ? x0 + width : x0) : (bounds.x0 + bounds.x1) / 2;
   const lineHeight = fontSize * 1.2;
 
   const lines = getTextLayout(
@@ -143,23 +151,19 @@ export function fillText(text, bounds, fontSize, fillStyle = "white", item) {
     maxWidth,
     height,
     fontSize,
+    font,
   );
   const totalHeight = lines.length * lineHeight;
-  let startY = centerY - totalHeight / 2 + lineHeight / 2;
+  const startY = start
+    ? y0 + lineHeight / 2
+    : (bounds.y0 + bounds.y1) / 2 - totalHeight / 2 + lineHeight / 2;
 
   lines.forEach((line, index) => {
-    this.canvas2dContext.strokeText(
-      line,
-      centerX,
-      startY + index * lineHeight,
-      maxWidth,
-    );
-    this.canvas2dContext.fillText(
-      line,
-      centerX,
-      startY + index * lineHeight,
-      maxWidth,
-    );
+    const y = startY + index * lineHeight;
+    if (style.textStroke) {
+      this.canvas2dContext.strokeText(line, anchorX, y, maxWidth);
+    }
+    this.canvas2dContext.fillText(line, anchorX, y, maxWidth);
   });
 
   this.canvas2dContext.restore();
@@ -190,17 +194,37 @@ export function fillRect(x0, y0, w, h, { color }) {
   const x1 = x0 + w;
   const y1 = y0 + h;
   let transformed = viewportTransform.call(this, { x0, y0, x1, y1 });
-  const margin = this.BOX_MARGIN * this.pixelRatio;
-  const transformedWidth = transformed.x1 - transformed.x0 - margin * 2;
-  const transformedHeight = transformed.y1 - transformed.y0 - margin * 2;
+  const style = styleOf(this);
+  const inset = (style.gap / 2) * this.pixelRatio;
+  const transformedWidth = transformed.x1 - transformed.x0 - inset * 2;
+  const transformedHeight = transformed.y1 - transformed.y0 - inset * 2;
   if (transformedWidth <= 0 || transformedHeight <= 0) {
     return;
   }
 
   this.canvas2dContext.fillStyle = color;
+  // A radius never exceeds half the block, so small blocks stay rectangles
+  // with rounded ends rather than distorting.
+  const radius = Math.min(
+    style.cornerRadius * this.pixelRatio,
+    transformedWidth / 2,
+    transformedHeight / 2,
+  );
+  if (radius > 0 && typeof this.canvas2dContext.roundRect === "function") {
+    this.canvas2dContext.beginPath();
+    this.canvas2dContext.roundRect(
+      transformed.x0 + inset,
+      transformed.y0 + inset,
+      transformedWidth,
+      transformedHeight,
+      radius,
+    );
+    this.canvas2dContext.fill();
+    return;
+  }
   this.canvas2dContext.fillRect(
-    transformed.x0 + margin,
-    transformed.y0 + margin,
+    transformed.x0 + inset,
+    transformed.y0 + inset,
     transformedWidth,
     transformedHeight,
   );

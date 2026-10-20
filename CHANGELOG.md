@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add a `style` option and `setStyle()` for gaps, corner radius, label font,
+  size range, color, outline, alignment and padding, and hover appearance.
+  The defaults keep the previous look. `BOX_MARGIN` is replaced by `gap`.
+- Add an `open` event, fired by Ctrl/Cmd-click or Shift+Enter on a block,
+  for opening a detail view without zooming.
+
 ## 0.1.5 - 2026-08-26
 
 - Queue a stationary click made during a zoom transition and replay it against

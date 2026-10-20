@@ -1,3 +1,4 @@
+import { DEFAULT_STYLE } from "./style";
 import { fillRect, fillText } from "./canvas";
 
 test("wraps an unbroken label within the available bounds", () => {
@@ -12,7 +13,7 @@ test("wraps an unbroken label within the available bounds", () => {
     strokeText: jest.fn(),
   };
   const context = {
-    BOX_MARGIN: 1,
+    style: DEFAULT_STYLE,
     canvas2dContext,
     pixelRatio: 1,
   };
@@ -44,7 +45,7 @@ test("ellipsizes wrapped text that exceeds the available height", () => {
   };
 
   fillText.call(
-    { BOX_MARGIN: 1, canvas2dContext, pixelRatio: 1 },
+    { style: DEFAULT_STYLE, canvas2dContext, pixelRatio: 1 },
     "abcdefghijklmnopqrstuv",
     { x0: 0, x1: 100, y0: 0, y1: 40 },
     20,
@@ -72,7 +73,7 @@ test("preserves explicit line breaks", () => {
   };
 
   fillText.call(
-    { BOX_MARGIN: 1, canvas2dContext, pixelRatio: 1 },
+    { style: DEFAULT_STYLE, canvas2dContext, pixelRatio: 1 },
     "Revenue\r\nFY 2026",
     { x0: 0, x1: 100, y0: 0, y1: 100 },
     20,
@@ -97,7 +98,7 @@ test("keeps box and text margins constant at high pixel ratios", () => {
     strokeText: jest.fn(),
   };
   const context = {
-    BOX_MARGIN: 1,
+    style: DEFAULT_STYLE,
     canvas2dContext,
     canvasElement: { width: 200, height: 200 },
     pixelRatio: 2,
@@ -136,7 +137,7 @@ test("uses a CSS-pixel minimum for high-resolution text", () => {
   };
 
   fillText.call(
-    { BOX_MARGIN: 1, canvas2dContext, pixelRatio: 2 },
+    { style: DEFAULT_STYLE, canvas2dContext, pixelRatio: 2 },
     "too small",
     { x0: 0, x1: 100, y0: 0, y1: 100 },
     10,
@@ -158,7 +159,7 @@ test("reuses measured label layouts until their geometry changes", () => {
     strokeText: jest.fn(),
   };
   const context = {
-    BOX_MARGIN: 1,
+    style: DEFAULT_STYLE,
     canvas2dContext,
     pixelRatio: 1,
   };

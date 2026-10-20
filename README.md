@@ -14,7 +14,7 @@ Treebox is an interactive TreeMap visualization.
 - pointer and touch support, with automatic container resize reflow
 - smooth transition
 - uses canvas & requestAnimationFrame for performance
-- customize text / color / weight
+- customize text / color / weight, and style gaps, corners, fonts, and labels
 - wraps long and multiline labels within their available bounds
 - fires events (so you can implement tooltip, etc.)
 - no runtime dependencies (about 10kb gzipped)
@@ -92,6 +92,49 @@ function destroyTreebox() {
 
 // Call destroyTreebox() when the surrounding view is removed.
 ```
+
+## Styling
+
+Pass `style` to the constructor, or call `setStyle` later (for example when
+the page switches theme). Every option is optional, and the defaults keep the
+original look. Sizes are CSS pixels.
+
+```javascript
+const treebox = new TreeBox({
+  data,
+  domElement,
+  style: {
+    gap: 3,
+    cornerRadius: 6,
+    fontFamily: "Inter, sans-serif",
+    fontWeight: 600,
+    textColor: "#ffffff",
+    textStroke: null,
+    textAlign: "start",
+    textPadding: 10,
+  },
+});
+
+// Merge new values into the current style, or pass null to reset.
+treebox.setStyle({ textColor: "#111827" });
+```
+
+| Option         | Default                             |                                                                               |
+| -------------- | ----------------------------------- | ----------------------------------------------------------------------------- |
+| `gap`          | `2`                                 | Space between adjacent blocks.                                                |
+| `cornerRadius` | `0`                                 | Block corner radius, capped at half the block.                                |
+| `fontFamily`   | `"sans-serif"`                      | Label font family.                                                            |
+| `fontWeight`   | `"normal"`                          | Label font weight: a keyword or 1 to 1000.                                    |
+| `minFontSize`  | `6`                                 | Blocks too small for this label size show none.                               |
+| `maxFontSize`  | `160`                               | Largest label size. Labels otherwise scale with their block.                  |
+| `textColor`    | `"white"`                           | A CSS color, or a callback receiving `{ ctx, hovering, item, bounds }`.       |
+| `textStroke`   | `"rgba(9, 14, 25, 0.84)"`           | Outline behind label text, or `null` for none.                                |
+| `textAlign`    | `"center"`                          | `"center"`, or `"start"` to anchor labels to the top-left (top-right in RTL). |
+| `textPadding`  | `0`                                 | Space between a block's edge and its label.                                   |
+| `hoverOpacity` | `0.6`                               | Opacity of a hovered or focused block, so the next level shows through.       |
+| `hoverFilter`  | `"brightness(110%) saturate(120%)"` | Canvas filter for a hovered block, or `"none"`.                               |
+
+Unknown options and invalid values throw a `TypeError`, so typos fail loudly.
 
 CommonJS consumers can use
 `const TreeBox = require("@kevinwang15/treebox")`. Loading `treebox.js`

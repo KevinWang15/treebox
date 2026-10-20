@@ -1,4 +1,5 @@
 import { reverseViewportTransform, viewportTransform } from "./viewport";
+import { DEFAULT_STYLE, resolveStyle } from "./style";
 import { clearAll, clearRect, fillRect, fillText } from "./canvas";
 import {
   onClickEventListener,
@@ -116,15 +117,12 @@ export default class TreeBox {
     reverseTransform: reverseViewportTransform.bind(this),
   };
 
-  // CSS pixels between boxes
-  BOX_MARGIN = 1;
-
   // how many pixels moved before drawing a selection area
   SELECTION_AREA_TRIGGER_THRESHOLD = 20;
 
   wheelListenerOptions = { passive: false };
 
-  constructor({ data, domElement, eventHandler, pixelRatio = 1 }) {
+  constructor({ data, domElement, eventHandler, pixelRatio = 1, style }) {
     if (!domElement || typeof domElement.appendChild !== "function") {
       throw new TypeError("TreeBox requires a valid domElement");
     }
@@ -136,6 +134,7 @@ export default class TreeBox {
     }
     validateHierarchy(data);
 
+    this.style = resolveStyle(DEFAULT_STYLE, style);
     this.pixelRatio = normalizePixelRatio(pixelRatio);
     this.eventHandler = eventHandler;
     this.domElement = domElement;
@@ -236,6 +235,19 @@ export default class TreeBox {
     this.hitTestIndex = null;
     this.viewportHistory = null;
     this.viewport = null;
+  }
+
+  // Changes how the treemap looks without rebuilding it, e.g. when the page
+  // switches between light and dark themes. Options not given keep their
+  // current values; pass null to reset all of them to the defaults.
+  setStyle(style) {
+    if (this.destroyed) {
+      return;
+    }
+    this.style =
+      style === null ? DEFAULT_STYLE : resolveStyle(this.style, style);
+    this.textLayoutCache = null;
+    this.repaint();
   }
 
   setPixelRatio(pixelRatio) {
