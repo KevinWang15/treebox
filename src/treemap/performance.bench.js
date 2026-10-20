@@ -1,3 +1,4 @@
+import { DEFAULT_STYLE } from "./style";
 import { bench, describe } from "vitest";
 import { fillText } from "./canvas";
 import { findItemAtPosition } from "./interaction";
@@ -93,7 +94,7 @@ describe("painting", () => {
     strokeText() {},
   };
   const textContext = {
-    BOX_MARGIN: 1,
+    style: DEFAULT_STYLE,
     canvas2dContext,
     pixelRatio: 1,
   };
