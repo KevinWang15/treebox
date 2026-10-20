@@ -452,3 +452,171 @@ test("cleans up when resize observation fails after listeners are added", () => 
     host.remove();
   }
 });
+
+describe("zoomTo", () => {
+  let host;
+  let originalMatchMedia;
+  let originalAnimationFrame;
+
+  beforeEach(() => {
+    host = document.createElement("div");
+    Object.defineProperties(host, {
+      clientWidth: { configurable: true, value: 400 },
+      clientHeight: { configurable: true, value: 200 },
+      getBoundingClientRect: {
+        configurable: true,
+        value: () => ({ left: 0, top: 0, width: 400, height: 200 }),
+      },
+    });
+    document.body.appendChild(host);
+    // Reduced motion finishes each transition on its first frame.
+    originalMatchMedia = window.matchMedia;
+    window.matchMedia = () => ({ matches: true });
+    originalAnimationFrame = global.requestAnimationFrame;
+    global.requestAnimationFrame = (callback) => setTimeout(callback);
+  });
+
+  afterEach(() => {
+    host.remove();
+    window.matchMedia = originalMatchMedia;
+    global.requestAnimationFrame = originalAnimationFrame;
+  });
+
+  const tree = () => {
+    const leafA = { text: "a1", weight: 1, children: null };
+    const inner = { text: "a2", children: [{ text: "x", weight: 1 }] };
+    const groupA = { text: "a", children: [leafA, inner] };
+    const groupB = { text: "b", children: [{ text: "b1", weight: 2 }] };
+    return { data: [groupA, groupB], groupA, groupB, inner, leafA };
+  };
+
+  test("zooms several levels at once and back to the top", async () => {
+    const { data, groupA, inner } = tree();
+    const events = [];
+    const treebox = new TreeBox({
+      data,
+      domElement: host,
+      eventHandler: (type, payload) => type === "zoom" && events.push(payload),
+    });
+
+    await expect(treebox.zoomTo(inner)).resolves.toBe(true);
+    expect(treebox.activeNode).toBe(inner);
+    expect(treebox.viewport).toEqual({
+      x0: inner.x0,
+      x1: inner.x1,
+      y0: inner.y0,
+      y1: inner.y1,
+    });
+    expect(treebox.viewportHistory.map((entry) => entry.node)).toEqual([
+      groupA,
+      inner,
+    ]);
+    expect(treebox.transitionReveals).toBeNull();
+
+    // Zooming out afterwards steps through the levels zoomTo passed.
+    await treebox.zoomOut();
+    expect(treebox.activeNode).toBe(groupA);
+
+    await expect(treebox.zoomTo(null)).resolves.toBe(true);
+    expect(treebox.activeNode).toBe(treebox.rootNode);
+    expect(treebox.viewportHistory).toEqual([]);
+    expect(events.map(({ direction, depth }) => [direction, depth])).toEqual([
+      ["to", 2],
+      ["out", 1],
+      ["to", 0],
+    ]);
+
+    treebox.destroy();
+  });
+
+  test("reveals every level between the shared ancestor and the target", async () => {
+    const { data, groupA, groupB, inner } = tree();
+    const treebox = new TreeBox({ data, domElement: host });
+    await treebox.zoomTo(groupB);
+
+    const zooming = treebox.zoomTo(inner);
+    expect(treebox.activeNode).toBe(treebox.rootNode);
+    expect([...treebox.transitionReveals]).toEqual([groupA, inner]);
+    await zooming;
+
+    treebox.destroy();
+  });
+
+  test("replaces an area selection with the path to the target", async () => {
+    const { data, groupA, groupB } = tree();
+    const treebox = new TreeBox({ data, domElement: host });
+    await treebox.zoomTo(groupA);
+    treebox.viewportHistory.push({
+      node: groupA,
+      viewport: { x0: groupA.x0, x1: groupA.x0 + 10, y0: 0, y1: 10 },
+    });
+
+    // The item already zoomed into, but behind a selection, is still a move.
+    await expect(treebox.zoomTo(groupA)).resolves.toBe(true);
+    expect(treebox.viewportHistory).toEqual([
+      { node: groupA, viewport: groupA },
+    ]);
+    expect(treebox.viewport.x1).toBe(groupA.x1);
+
+    await treebox.zoomTo(groupB);
+    expect(treebox.viewportUtils.transform(groupB)).toMatchObject({
+      x0: 0,
+      y0: 0,
+    });
+    treebox.destroy();
+  });
+
+  test("shows an item without children on its own, still hoverable", async () => {
+    const { data, leafA } = tree();
+    const treebox = new TreeBox({ data, domElement: host });
+
+    await expect(treebox.zoomTo(leafA)).resolves.toBe(true);
+    expect(treebox.activeNode).toBe(leafA);
+    treebox.onMouseMove({ x: 200, y: 100 });
+    expect(treebox.lastHoveringItem).toBe(leafA);
+
+    treebox.destroy();
+  });
+
+  test("jumps without animating, and ignores items outside the tree", async () => {
+    const { data, inner } = tree();
+    const events = [];
+    const treebox = new TreeBox({
+      data,
+      domElement: host,
+      eventHandler: (type, payload) => type === "zoom" && events.push(payload),
+    });
+
+    const jump = treebox.zoomTo(inner, { animate: false });
+    expect(treebox.activeNode).toBe(inner);
+    expect(treebox.viewportTransitionInProgress).toBe(false);
+    await expect(jump).resolves.toBe(true);
+    await expect(treebox.zoomTo(inner)).resolves.toBe(true);
+    expect(events).toHaveLength(1);
+
+    await expect(treebox.zoomTo({ text: "stranger" })).resolves.toBe(false);
+    expect(treebox.activeNode).toBe(inner);
+
+    treebox.destroy();
+    await expect(treebox.zoomTo(null)).resolves.toBe(false);
+  });
+
+  test("waits for a transition in progress, then runs in order", async () => {
+    const { data, groupA, groupB } = tree();
+    const events = [];
+    const treebox = new TreeBox({
+      data,
+      domElement: host,
+      eventHandler: (type, payload) =>
+        type === "zoom" && events.push(payload.node.text),
+    });
+
+    const first = treebox.zoomIn(groupA);
+    const second = treebox.zoomTo(groupB);
+    await Promise.all([first, second]);
+
+    expect(events).toEqual(["a", "b"]);
+    expect(treebox.activeNode).toBe(groupB);
+    treebox.destroy();
+  });
+});

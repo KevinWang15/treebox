@@ -234,6 +234,16 @@ function itemsInViewport(items, viewport) {
   );
 }
 
+// The items that can be hovered, chosen, and opened: the zoomed-in item's
+// children, or the item itself when zoomTo() reached one without children.
+function visibleItems() {
+  const { children } = this.activeNode;
+  if (children && children.length) {
+    return children;
+  }
+  return this.activeNode === this.rootNode ? [] : [this.activeNode];
+}
+
 export function findItemAtPosition({ x, y }) {
   const transformed = this.viewportUtils.reverseTransform({
     x0: x,
@@ -244,7 +254,7 @@ export function findItemAtPosition({ x, y }) {
 
   const tx = transformed.x0;
   const ty = transformed.y0;
-  const items = this.activeNode.children || [];
+  const items = visibleItems.call(this);
   return hitTestCandidates(this, items, tx, ty).find(
     (item) => item.x0 <= tx && item.x1 >= tx && item.y0 <= ty && item.y1 >= ty,
   );
@@ -613,10 +623,7 @@ export function onKeyDownEventListener(e) {
   ) {
     e.preventDefault();
     if (!e.repeat) {
-      const items = itemsInViewport(
-        this.activeNode.children || [],
-        this.viewport,
-      );
+      const items = itemsInViewport(visibleItems.call(this), this.viewport);
       const item = items.includes(this.lastHoveringItem)
         ? this.lastHoveringItem
         : items[0];
@@ -687,10 +694,7 @@ export function onKeyDownEventListener(e) {
 
   if (["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"].includes(e.key)) {
     e.preventDefault();
-    const items = itemsInViewport(
-      this.activeNode.children || [],
-      this.viewport,
-    );
+    const items = itemsInViewport(visibleItems.call(this), this.viewport);
     updateHoveredItem.call(
       this,
       findDirectionalItem(items, this.lastHoveringItem, e.key),
@@ -703,7 +707,7 @@ export function onKeyDownEventListener(e) {
   }
 
   e.preventDefault();
-  const items = itemsInViewport(this.activeNode.children || [], this.viewport);
+  const items = itemsInViewport(visibleItems.call(this), this.viewport);
   const selectedItem = items.includes(this.lastHoveringItem)
     ? this.lastHoveringItem
     : items[0];
