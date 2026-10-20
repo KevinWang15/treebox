@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.0 - 2026-10-21
+
 - Add `zoomTo(item, { animate })` for zooming straight to any item, or back to
   the top with `null`, so a treemap can follow navigation outside it. It
   animates through every level in between, and its zoom event's direction is
