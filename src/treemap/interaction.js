@@ -291,9 +291,23 @@ export function flushPendingClick() {
   });
 }
 
+// Ctrl-click (Cmd-click on macOS) opens a block instead of zooming into it, the
+// way the same gesture opens a link in a new tab. The keyboard equivalent is
+// Shift+Enter (see onKeyDownEventListener).
+function isOpenGesture(e) {
+  return Boolean(e.ctrlKey || e.metaKey);
+}
+
 export function onClickEventListener(e) {
   if (this.selectionAreaWasTriggered) {
     this.selectionAreaWasTriggered = false;
+    return;
+  }
+  if (isOpenGesture(e)) {
+    const item = findItemAtPosition.call(this, this.eventToCanvasPoint(e));
+    if (item) {
+      this.emitEvent("open", item);
+    }
     return;
   }
   if (this.viewportTransitionInProgress) {
@@ -586,6 +600,33 @@ export function onMouseLeaveEventListener() {
 }
 
 export function onKeyDownEventListener(e) {
+  // Shift+Enter is the keyboard open gesture. Ctrl/Cmd+Enter is a browser and
+  // platform shortcut, so it's left alone like the other modified keys below.
+  if (
+    e.key === "Enter" &&
+    e.shiftKey &&
+    !e.altKey &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !this.isMouseDown &&
+    !this.viewportTransitionInProgress
+  ) {
+    e.preventDefault();
+    if (!e.repeat) {
+      const items = itemsInViewport(
+        this.activeNode.children || [],
+        this.viewport,
+      );
+      const item = items.includes(this.lastHoveringItem)
+        ? this.lastHoveringItem
+        : items[0];
+      if (item) {
+        this.emitEvent("open", item);
+      }
+    }
+    return;
+  }
+
   if (
     e.altKey ||
     e.ctrlKey ||

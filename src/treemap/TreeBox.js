@@ -414,7 +414,7 @@ export default class TreeBox {
     canvas.setAttribute("role", "application");
     canvas.setAttribute(
       "aria-label",
-      "Interactive treemap. Tap or click a group to zoom in. With a keyboard, use the arrow keys to choose a group, Enter to zoom in, and Escape to zoom out.",
+      "Interactive treemap. Tap or click a group to zoom in. With a keyboard, use the arrow keys to choose a group, Enter to zoom in, Shift+Enter to open it, and Escape to zoom out.",
     );
     canvas.style.display = "block";
     canvas.style.width = domElement.clientWidth + "px";

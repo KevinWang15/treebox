@@ -8,6 +8,7 @@ Treebox is an interactive TreeMap visualization.
 
 - weight-aware multi-level hierarchical treemap layout
 - click on a block to zoom in / `Esc` or scroll down to zoom out
+- Ctrl-click (Cmd-click on macOS) or `Shift+Enter` on a block fires an `open` event instead of zooming
 - drag to zoom into a selected area; scroll up to retrace a zoom-out
 - keyboard-focusable canvas with arrow, `Enter`, `Space`, and `Esc` controls
 - pointer and touch support, with automatic container resize reflow
@@ -80,6 +81,7 @@ const treebox = new TreeBox({
 
 // Hover events receive the active item, then null when hover/focus leaves.
 // Zoom events include { node, direction, depth, canZoomOut }.
+// Open events receive the block that was Ctrl/Cmd-clicked or Shift+Entered.
 
 // Keep the backing store sharp after browser zoom or a display change.
 treebox.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));

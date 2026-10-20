@@ -671,3 +671,88 @@ test.each(["ArrowDown", "Enter", " "])(
     expect(event.preventDefault).toHaveBeenCalledTimes(1);
   },
 );
+
+function createOpenContext() {
+  const leaf = { text: "leaf", x0: 0, x1: 20, y0: 0, y1: 20 };
+  const parent = {
+    text: "parent",
+    children: [{}],
+    x0: 20,
+    x1: 40,
+    y0: 0,
+    y1: 20,
+  };
+  return {
+    leaf,
+    parent,
+    context: {
+      activeNode: { children: [leaf, parent] },
+      viewport: { x0: 0, x1: 40, y0: 0, y1: 20 },
+      selectionAreaWasTriggered: false,
+      viewportTransitionInProgress: false,
+      transitionTargetNode: null,
+      isMouseDown: false,
+      lastHoveringItem: null,
+      eventToCanvasPoint: jest.fn(() => ({ x: 30, y: 10 })),
+      viewportUtils: { reverseTransform: (point) => point },
+      emitEvent: jest.fn(),
+      zoomIn: jest.fn(),
+    },
+  };
+}
+
+test.each([["ctrlKey"], ["metaKey"]])(
+  "%s-click opens the block under the pointer instead of zooming",
+  (modifier) => {
+    const { context, parent } = createOpenContext();
+
+    onClickEventListener.call(context, { [modifier]: true });
+
+    expect(context.emitEvent).toHaveBeenCalledWith("open", parent);
+    expect(context.zoomIn).not.toHaveBeenCalled();
+  },
+);
+
+test("a modifier-click on a leaf opens it too", () => {
+  const { context, leaf } = createOpenContext();
+  context.eventToCanvasPoint = jest.fn(() => ({ x: 10, y: 10 }));
+
+  onClickEventListener.call(context, { ctrlKey: true });
+
+  expect(context.emitEvent).toHaveBeenCalledWith("open", leaf);
+});
+
+test("a plain click still zooms and never opens", () => {
+  const { context, parent } = createOpenContext();
+
+  onClickEventListener.call(context, {});
+
+  expect(context.zoomIn).toHaveBeenCalledWith(parent);
+  expect(context.emitEvent).not.toHaveBeenCalledWith("open", expect.anything());
+});
+
+test("Shift+Enter opens the focused block without zooming", () => {
+  const { context, parent } = createOpenContext();
+  context.lastHoveringItem = parent;
+  const event = { key: "Enter", shiftKey: true, preventDefault: jest.fn() };
+
+  onKeyDownEventListener.call(context, event);
+
+  expect(event.preventDefault).toHaveBeenCalled();
+  expect(context.emitEvent).toHaveBeenCalledWith("open", parent);
+  expect(context.zoomIn).not.toHaveBeenCalled();
+});
+
+test("a held Shift+Enter opens only once", () => {
+  const { context, parent } = createOpenContext();
+  context.lastHoveringItem = parent;
+
+  onKeyDownEventListener.call(context, {
+    key: "Enter",
+    ctrlKey: true,
+    repeat: true,
+    preventDefault: jest.fn(),
+  });
+
+  expect(context.emitEvent).not.toHaveBeenCalled();
+});
