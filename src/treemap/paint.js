@@ -204,7 +204,9 @@ export function paintLayer(data, { hovering, transitionProgress = 0, depth }) {
         transitionProgress,
         depth: depth + 1,
       });
-      if (this.transitionTargetNode === item) {
+      // A parent is painted over its children like a veil. The veils of the
+      // items a transition zooms into fade out to reveal what's inside them.
+      if (this.transitionReveals?.has(item)) {
         this.canvas2dContext.save();
         this.canvas2dContext.globalAlpha = 1 - transitionProgress;
         this.canvasUtils.fillRect(

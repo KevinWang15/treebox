@@ -124,6 +124,7 @@ export function zoomIn(targetNode) {
   }
 
   this.transitionTargetNode = targetNode;
+  this.transitionReveals = new Set([targetNode]);
   let nodeAndViewport = {
     node: targetNode,
     viewport: targetNode,
@@ -137,13 +138,102 @@ export function zoomIn(targetNode) {
     }
 
     this.activeNode = targetNode;
-    this.transitionTargetNode = null;
-    this.lastHoveringItem = null;
-    this.repaint();
-    repaintHoveredItem.call(this);
-    this.emitZoomEvent("in");
+    finishNavigation.call(this, "in");
     return true;
   });
+}
+
+// Zooms to any item in the tree, or back to the top for null, the way a
+// series of clicks and zoom-outs would get there. It's for keeping the treemap
+// in step with state outside it, so it replaces the zoom history (including
+// area selections) with the path down to the item, and its zoom event's
+// direction is "to". Items without children can be zoomed to as well; they
+// fill the canvas.
+export function zoomTo(item, { animate = true } = {}) {
+  if (this.destroyed) {
+    return Promise.resolve(false);
+  }
+  const target = item ?? this.rootNode;
+  const path = findPath(this.rootNode, target);
+  if (!path || !isUsableViewport(target)) {
+    return Promise.resolve(false);
+  }
+  if (this.viewportTransitionInProgress) {
+    return queueNavigation.call(this, () => this.zoomTo(item, { animate }));
+  }
+
+  const current = this.viewportHistory[this.viewportHistory.length - 1];
+  const arrived = current
+    ? current.node === target && current.viewport === target
+    : target === this.rootNode;
+  if (arrived) {
+    return Promise.resolve(true);
+  }
+
+  // The animation starts from the deepest item on both the current path and
+  // the new one, and reveals every level below it down to the target.
+  const activePath = findPath(this.rootNode, this.activeNode) ?? [];
+  let shared = 0;
+  while (shared < path.length && path[shared] === activePath[shared]) {
+    shared++;
+  }
+  const common = shared ? path[shared - 1] : this.rootNode;
+
+  this.viewportHistory.splice(
+    0,
+    this.viewportHistory.length,
+    ...path.map((node) => ({ node, viewport: node })),
+  );
+  this.viewportHistoryUndoStack.splice(0);
+
+  if (!animate) {
+    this.activeNode = target;
+    Object.assign(this.viewport, {
+      x0: target.x0,
+      x1: target.x1,
+      y0: target.y0,
+      y1: target.y1,
+    });
+    finishNavigation.call(this, "to");
+    return Promise.resolve(true);
+  }
+
+  this.activeNode = common;
+  this.transitionTargetNode = target;
+  this.transitionReveals = new Set(path.slice(shared));
+  return this.transitionTo(target).then(() => {
+    if (this.destroyed) {
+      return false;
+    }
+
+    this.activeNode = target;
+    finishNavigation.call(this, "to");
+    return true;
+  });
+}
+
+// The items from just below the root down to `target`: [] for the root itself,
+// null when it isn't in the tree.
+function findPath(root, target) {
+  if (target === root) {
+    return [];
+  }
+  for (const child of root.children || []) {
+    const below = findPath(child, target);
+    if (below) {
+      return [child, ...below];
+    }
+  }
+  return null;
+}
+
+function finishNavigation(direction) {
+  this.transitionTargetNode = null;
+  this.transitionReveals = null;
+  this.lastHoveringItem = null;
+  this.repaint();
+  repaintHoveredItem.call(this);
+  this.emitZoomEvent(direction);
 }
 
 export function zoomOut() {
@@ -151,7 +241,7 @@ export function zoomOut() {
     return Promise.resolve(false);
   }
   if (this.viewportTransitionInProgress) {
-    return queueNavigation.call(this, "out");
+    return queueNavigation.call(this, () => this.zoomOut());
   }
   if (!this.viewportHistory.length) {
     return Promise.resolve(false);
@@ -174,11 +264,7 @@ export function zoomOut() {
       return false;
     }
 
-    this.transitionTargetNode = null;
-    this.lastHoveringItem = null;
-    this.repaint();
-    repaintHoveredItem.call(this);
-    this.emitZoomEvent("out");
+    finishNavigation.call(this, "out");
     return true;
   });
 }
@@ -188,7 +274,7 @@ export function undoZoomOut() {
     return Promise.resolve(false);
   }
   if (this.viewportTransitionInProgress) {
-    return queueNavigation.call(this, "redo");
+    return queueNavigation.call(this, () => this.undoZoomOut());
   }
   if (!this.viewportHistoryUndoStack.length) {
     return Promise.resolve(false);
@@ -201,6 +287,7 @@ export function undoZoomOut() {
   this.viewportHistory.push(lastNodeAndViewport);
 
   this.transitionTargetNode = lastNodeAndViewport.node;
+  this.transitionReveals = new Set([lastNodeAndViewport.node]);
 
   return this.transitionTo(lastNodeAndViewport.viewport).then(() => {
     if (this.destroyed) {
@@ -208,11 +295,7 @@ export function undoZoomOut() {
     }
 
     this.activeNode = lastNodeAndViewport.node;
-    this.transitionTargetNode = null;
-    this.lastHoveringItem = null;
-    this.repaint();
-    repaintHoveredItem.call(this);
-    this.emitZoomEvent("redo");
+    finishNavigation.call(this, "redo");
     return true;
   });
 }
@@ -229,9 +312,10 @@ export function repaintHoveredItem() {
   });
 }
 
-function queueNavigation(direction) {
+// Holds a navigation requested during a transition until it settles.
+function queueNavigation(navigate) {
   return new Promise((resolve, reject) => {
-    this.pendingNavigationQueue.push({ direction, reject, resolve });
+    this.pendingNavigationQueue.push({ navigate, reject, resolve });
   });
 }
 
@@ -267,12 +351,13 @@ function schedulePendingNavigation() {
     }
 
     const pending = this.pendingNavigationQueue.shift();
-    const navigation =
-      pending.direction === "out" ? this.zoomOut() : this.undoZoomOut();
-    navigation.then(pending.resolve, pending.reject).finally(() => {
-      // A request with no available history resolves immediately and therefore
-      // has no transition finalizer to schedule the next queued request.
-      schedulePendingNavigation.call(this);
-    });
+    pending
+      .navigate()
+      .then(pending.resolve, pending.reject)
+      .finally(() => {
+        // A request with no available history resolves immediately and therefore
+        // has no transition finalizer to schedule the next queued request.
+        schedulePendingNavigation.call(this);
+      });
   });
 }

@@ -80,8 +80,16 @@ const treebox = new TreeBox({
 });
 
 // Hover events receive the active item, then null when hover/focus leaves.
-// Zoom events include { node, direction, depth, canZoomOut }.
+// Zoom events include { node, direction, depth, canZoomOut }; direction is
+// "in", "out", "redo", "select" (an area selection), or "to" (zoomTo).
 // Open events receive the block that was Ctrl/Cmd-clicked or Shift+Entered.
+
+// Zoom to any item in `data`, or back to the top with null, for example when
+// the page's own navigation changes. It animates through the levels between
+// (pass { animate: false } to jump), replaces the zoom history with the path to
+// the item, and fires a zoom event with direction "to". zoomOut() steps back
+// up one level, like Escape.
+treebox.zoomTo(data[0].children[2]);
 
 // Keep the backing store sharp after browser zoom or a display change.
 treebox.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));

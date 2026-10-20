@@ -23,6 +23,7 @@ import {
   undoZoomOut,
   zoomIn,
   zoomOut,
+  zoomTo,
 } from "./transition";
 import { clearRectAndPaintLayer, paintLayer, repaint, resize } from "./paint";
 import throttle from "./throttle";
@@ -52,6 +53,8 @@ export default class TreeBox {
 
   // if in a transition, which node are we transitioning to
   transitionTargetNode = null;
+  // the items whose children a transition reveals (see paint.js)
+  transitionReveals = null;
   viewportTransitionInProgress = false;
   resizePending = false;
   pendingNavigationScheduled = false;
@@ -93,6 +96,7 @@ export default class TreeBox {
   transitionTo = transitionTo.bind(this);
   zoomIn = zoomIn.bind(this);
   zoomOut = zoomOut.bind(this);
+  zoomTo = zoomTo.bind(this);
   zoomOutThrottled = throttle(this.zoomOut, 350, {
     leading: true,
     trailing: false,
