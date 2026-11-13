@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add `parts` to an item: a list of `{ weight, color }` that splits its block
+  along its longer side, each part as long as its share of the weight, to show
+  what the block is made of. Parts are drawn on the level in front; zooming in
+  fades a block's parts into its children's.
+
 ## 0.3.0 - 2026-10-21
 
 - Add `zoomTo(item, { animate })` for zooming straight to any item, or back to

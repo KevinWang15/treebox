@@ -361,3 +361,122 @@ test("does not reset an unchanged canvas backing store during repaint", () => {
   expect(setWidth).not.toHaveBeenCalled();
   expect(setHeight).not.toHaveBeenCalled();
 });
+
+function partsPainter({ transitionReveals = null } = {}) {
+  const fillRect = jest.fn();
+  // Like Canvas, keeps the previous fill style when given something that isn't a color.
+  let fillStyle = "#000000";
+  const canvas2dContext = { save: jest.fn(), restore: jest.fn() };
+  Object.defineProperty(canvas2dContext, "fillStyle", {
+    get: () => fillStyle,
+    set: (color) => {
+      if (typeof color === "string" && color.startsWith("#")) {
+        fillStyle = color;
+      }
+    },
+  });
+  const context = {
+    activeNode: {},
+    canvas2dContext,
+    canvasUtils: { clearRect: jest.fn(), fillRect, fillText: jest.fn() },
+    pixelRatio: 1,
+    transitionReveals,
+    viewportUtils: { transform: (bounds) => bounds },
+  };
+  context.paintLayer = paintLayer.bind(context);
+  return { context, fillRect };
+}
+
+const box = (fields) => ({
+  x0: 0,
+  x1: 100,
+  y0: 0,
+  y1: 60,
+  children: null,
+  ...fields,
+});
+
+test("paints a front block's parts, and its children in their colors", () => {
+  const { context, fillRect } = partsPainter();
+  const child = box({
+    text: "child",
+    color: "#00ff00",
+    parts: [{ weight: 1, color: "#0000ff" }],
+  });
+  const parent = box({
+    text: "parent",
+    color: "#ff0000",
+    parts: [
+      { weight: 1, color: "#111111" },
+      { weight: 0, color: "#222222" },
+      { weight: 3, color: () => "#333333" },
+    ],
+    children: [child],
+  });
+
+  context.paintLayer([parent], { hovering: false, depth: 0 });
+
+  expect(fillRect.mock.calls.map((call) => call[4])).toEqual([
+    { color: "#00ff00" },
+    {
+      parts: [
+        { weight: 1, color: "#111111" },
+        { weight: 3, color: "#333333" },
+      ],
+    },
+  ]);
+});
+
+test("paints the parts of the children a transition reveals", () => {
+  const child = box({
+    text: "child",
+    color: "#00ff00",
+    parts: [{ weight: 1, color: "#0000ff" }],
+  });
+  const parent = box({ text: "parent", color: "#ff0000", children: [child] });
+  const { context, fillRect } = partsPainter({
+    transitionReveals: new Set([parent]),
+  });
+
+  context.paintLayer([parent], {
+    hovering: false,
+    depth: 0,
+    transitionProgress: 0.5,
+  });
+
+  expect(fillRect.mock.calls[0][4]).toEqual({
+    parts: [{ weight: 1, color: "#0000ff" }],
+  });
+});
+
+test("paints a block in its color when its parts can't be painted", () => {
+  const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+  const { context, fillRect } = partsPainter();
+  const items = [
+    box({
+      text: "invalid",
+      color: "#ff0000",
+      parts: [{ weight: -1, color: "#0000ff" }],
+    }),
+    box({
+      text: "empty",
+      color: "#ff0000",
+      parts: [{ weight: 0, color: "#0000ff" }],
+    }),
+    box({
+      text: "bad color",
+      color: "#ff0000",
+      parts: [{ weight: 1, color: 42 }],
+    }),
+  ];
+
+  context.paintLayer(items, { hovering: false, depth: 0 });
+
+  expect(fillRect.mock.calls.map((call) => call[4])).toEqual([
+    { color: "#ff0000" },
+    { color: "#ff0000" },
+    { parts: [{ weight: 1, color: "#ff0000" }] },
+  ]);
+  expect(warn).toHaveBeenCalledTimes(2);
+  warn.mockRestore();
+});

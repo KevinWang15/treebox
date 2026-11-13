@@ -180,3 +180,77 @@ test("reuses measured label layouts until their geometry changes", () => {
     firstMeasurementCount,
   );
 });
+
+function partsContext(style = DEFAULT_STYLE) {
+  const fills = [];
+  const canvas2dContext = {
+    beginPath: jest.fn(),
+    clip: jest.fn(),
+    restore: jest.fn(),
+    roundRect: jest.fn(),
+    save: jest.fn(),
+    fill: jest.fn(),
+    fillRect: jest.fn((...rect) =>
+      fills.push([canvas2dContext.fillStyle, ...rect]),
+    ),
+  };
+  const context = {
+    style,
+    canvas2dContext,
+    canvasElement: { width: 100, height: 100 },
+    pixelRatio: 1,
+    viewport: { x0: 0, x1: 100, y0: 0, y1: 100 },
+  };
+  return { context, canvas2dContext, fills };
+}
+
+test("paints parts side by side along a wide block, on whole pixels", () => {
+  const { context, fills } = partsContext();
+  const parts = [
+    { weight: 1, color: "red" },
+    { weight: 2, color: "blue" },
+  ];
+
+  fillRect.call(context, 0, 0, 100, 50, { parts });
+
+  // The block is inset by half the gap: 1, 1, 98 × 48. The edge is at 1 + 98 / 3 = 33.67, rounded to 34.
+  expect(fills).toEqual([
+    ["red", 1, 1, 33, 48],
+    ["blue", 34, 1, 65, 48],
+  ]);
+});
+
+test("paints parts top to bottom along a tall block", () => {
+  const { context, fills } = partsContext();
+  const parts = [
+    { weight: 3, color: "red" },
+    { weight: 1, color: "blue" },
+  ];
+
+  fillRect.call(context, 0, 0, 40, 100, { parts });
+
+  expect(fills).toEqual([
+    ["red", 1, 1, 38, 74],
+    ["blue", 1, 75, 38, 24],
+  ]);
+});
+
+test("clips parts to a rounded block", () => {
+  const { context, canvas2dContext, fills } = partsContext({
+    ...DEFAULT_STYLE,
+    cornerRadius: 6,
+  });
+
+  fillRect.call(context, 0, 0, 100, 50, {
+    parts: [
+      { weight: 1, color: "red" },
+      { weight: 1, color: "blue" },
+    ],
+  });
+
+  expect(canvas2dContext.roundRect).toHaveBeenCalledWith(1, 1, 98, 48, 6);
+  expect(canvas2dContext.clip).toHaveBeenCalled();
+  expect(canvas2dContext.fill).not.toHaveBeenCalled();
+  expect(fills.map(([color]) => color)).toEqual(["red", "blue"]);
+  expect(canvas2dContext.restore).toHaveBeenCalled();
+});

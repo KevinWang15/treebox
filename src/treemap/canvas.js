@@ -190,7 +190,7 @@ export function clearAll() {
   );
 }
 
-export function fillRect(x0, y0, w, h, { color }) {
+export function fillRect(x0, y0, w, h, { color, parts = null }) {
   const x1 = x0 + w;
   const y1 = y0 + h;
   let transformed = viewportTransform.call(this, { x0, y0, x1, y1 });
@@ -202,7 +202,8 @@ export function fillRect(x0, y0, w, h, { color }) {
     return;
   }
 
-  this.canvas2dContext.fillStyle = color;
+  const left = transformed.x0 + inset;
+  const top = transformed.y0 + inset;
   // A radius never exceeds half the block, so small blocks stay rectangles
   // with rounded ends rather than distorting.
   const radius = Math.min(
@@ -210,11 +211,26 @@ export function fillRect(x0, y0, w, h, { color }) {
     transformedWidth / 2,
     transformedHeight / 2,
   );
-  if (radius > 0 && typeof this.canvas2dContext.roundRect === "function") {
+  const rounded =
+    radius > 0 && typeof this.canvas2dContext.roundRect === "function";
+
+  if (parts) {
+    fillParts.call(this, parts, {
+      left,
+      top,
+      width: transformedWidth,
+      height: transformedHeight,
+      radius: rounded ? radius : 0,
+    });
+    return;
+  }
+
+  this.canvas2dContext.fillStyle = color;
+  if (rounded) {
     this.canvas2dContext.beginPath();
     this.canvas2dContext.roundRect(
-      transformed.x0 + inset,
-      transformed.y0 + inset,
+      left,
+      top,
       transformedWidth,
       transformedHeight,
       radius,
@@ -222,10 +238,43 @@ export function fillRect(x0, y0, w, h, { color }) {
     this.canvas2dContext.fill();
     return;
   }
-  this.canvas2dContext.fillRect(
-    transformed.x0 + inset,
-    transformed.y0 + inset,
-    transformedWidth,
-    transformedHeight,
-  );
+
+  this.canvas2dContext.fillRect(left, top, transformedWidth, transformedHeight);
+}
+
+// A block's parts side by side along its longer side, first part first, each
+// as long as its share of the weight. Edges between parts fall on whole device
+// pixels so neighbors never overlap or leave a seam.
+function fillParts(parts, { left, top, width, height, radius }) {
+  const context = this.canvas2dContext;
+  const horizontal = width >= height;
+  const length = horizontal ? width : height;
+  const start = horizontal ? left : top;
+  const total = parts.reduce((sum, part) => sum + part.weight, 0);
+
+  context.save();
+  if (radius > 0) {
+    context.beginPath();
+    context.roundRect(left, top, width, height, radius);
+    context.clip();
+  }
+  let from = start;
+  let weightBefore = 0;
+  parts.forEach((part, index) => {
+    weightBefore += part.weight;
+    const to =
+      index === parts.length - 1
+        ? start + length
+        : Math.round(start + (length * weightBefore) / total);
+    if (to > from) {
+      context.fillStyle = part.color;
+      if (horizontal) {
+        context.fillRect(from, top, to - from, height);
+      } else {
+        context.fillRect(left, from, width, to - from);
+      }
+    }
+    from = Math.max(from, to);
+  });
+  context.restore();
 }
