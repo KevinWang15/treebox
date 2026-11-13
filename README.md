@@ -68,6 +68,25 @@ export function genData(layers = 4) {
 `color` accepts a CSS color string or a callback receiving
 `{ ctx, hovering, item, bounds }` when the color needs to be dynamic.
 
+An item can also show what it is made of with `parts`, a list of
+`{ weight, color }`. The block is then split along its longer side, first part
+first, each as long as its share of the weight; parts with a weight of 0 are
+skipped. Parts are drawn on the level in front, and the parts of a block you
+zoom into fade into its children's. A part's `color` takes the same values as
+an item's; its callback also receives `part`.
+
+```javascript
+{
+  text: "Platform",
+  weight: 1900,
+  color: "#3185FC",
+  parts: [
+    { weight: 500, color: "#1e2b4a" },
+    { weight: 1400, color: "#3185FC" },
+  ],
+}
+```
+
 ```javascript
 import TreeBox from "@kevinwang15/treebox";
 
