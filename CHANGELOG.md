@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.0 - 2026-11-13
+
 - Add `parts` to an item: a list of `{ weight, color }` that splits its block
   along its longer side, each part as long as its share of the weight, to show
   what the block is made of. Parts are drawn on the level in front; zooming in
